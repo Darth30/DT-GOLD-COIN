@@ -19,4 +19,19 @@ module.exports = {
     },
     hardhat: { chainId: 31337 },
   },
+  etherscan: {
+    apiKey: {
+      pulsechain: "0",
+    },
+    customChains: [
+      {
+        network: "pulsechain",
+        chainId: 369,
+        urls: {
+          apiURL: "https://api.scan.pulsechain.com/api",
+          browserURL: "https://scan.pulsechain.com"
+        }
+      }
+    ]
+  },
 };

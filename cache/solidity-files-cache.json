@@ -153,6 +153,122 @@
       "artifacts": [
         "MockPRC20"
       ]
+    },
+    "/Users/haqq001/DT-GOLD-COIN/contracts/DTGCDAOVoting.sol": {
+      "lastModificationDate": 1767062258221,
+      "contentHash": "fd42310f4046bf2720790646994b8b7f",
+      "sourceName": "contracts/DTGCDAOVoting.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "DTGCDAOVoting",
+        "IPRC20",
+        "IPulseXRouter",
+        "IStaking"
+      ]
+    },
+    "/Users/haqq001/DT-GOLD-COIN/contracts/DTGCLPStakingV2.sol": {
+      "lastModificationDate": 1767062258218,
+      "contentHash": "66521ce2511f789a50ee5980fea79e81",
+      "sourceName": "contracts/DTGCLPStakingV2.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "DTGCLPStakingV2",
+        "IPRC20"
+      ]
+    },
+    "/Users/haqq001/DT-GOLD-COIN/contracts/DTGCStakingV2.sol": {
+      "lastModificationDate": 1767062258212,
+      "contentHash": "f42efac396f74b889951e69691c6dcca",
+      "sourceName": "contracts/DTGCStakingV2.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "viaIR": true,
+          "evmVersion": "paris",
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "DTGCStakingV2",
+        "IPRC20"
+      ]
     }
   }
 }
