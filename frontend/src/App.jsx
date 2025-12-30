@@ -2151,7 +2151,7 @@ const StakeVideoModal = ({ onComplete, tierName, isDark }) => {
         border: '2px solid var(--diamond)',
         boxShadow: 'var(--glow-diamond)',
       }}>
-        <video autoPlay muted playsInline style={{ width: '100%', display: 'block' }}>
+        <video autoPlay playsInline style={{ width: '100%', display: 'block' }}>
           <source src={VIDEOS.stake} type="video/quicktime" />
           <source src={VIDEOS.stake.replace('.mov', '.mp4')} type="video/mp4" />
         </video>
@@ -2221,7 +2221,7 @@ const StakeModal = ({ isOpen, onClose, type, amount, tier }) => {
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         {VIDEOS_ENABLED && (
-        <video className="modal-video" autoPlay loop muted playsInline>
+        <video className="modal-video" autoPlay loop playsInline>
           <source src={VIDEOS.popup} type="video/quicktime" />
           <source src={VIDEOS.popup.replace('.mov', '.mp4')} type="video/mp4" />
         </video>
@@ -2258,13 +2258,7 @@ export default function App() {
   });
 
   // Intro video overlay (shows once per session)
-  const [showIntro, setShowIntro] = useState(() => {
-    if (typeof window !== 'undefined' && VIDEOS_ENABLED) {
-      const seen = sessionStorage.getItem('dtgc-intro-seen');
-      return !seen;
-    }
-    return false;
-  });
+  const [showIntro, setShowIntro] = useState(false); // Intro video disabled
   
   const handleIntroComplete = () => {
     setShowIntro(false);
@@ -3376,7 +3370,7 @@ export default function App() {
               {/* Video Background at Bottom */}
               {VIDEOS_ENABLED && (
               <div className="wp-video-section">
-                <video className="wp-video-bg" autoPlay loop muted playsInline>
+                <video className="wp-video-bg" autoPlay loop playsInline>
                   <source src={VIDEOS.whitepaper} type="video/quicktime" />
                   <source src={VIDEOS.whitepaper.replace('.mov', '.mp4')} type="video/mp4" />
                 </video>
