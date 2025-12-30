@@ -54,13 +54,64 @@ const V5_FEES = {
   exitFeeEarly: 20,          // 20% exit for paper hands (<60 days)
 };
 
-// V5 Staking Tiers
+// V5 Staking Tiers (with card styling)
 const V5_STAKING_TIERS = [
-  { id: 0, name: 'SILVER', emoji: '🥈', minInvest: 200, lockDays: 30, holdDays: 60, apr: 15, bonus: 10, boost: 1 },
-  { id: 1, name: 'GOLD', emoji: '🥇', minInvest: 500, lockDays: 90, holdDays: 90, apr: 18, bonus: 10, boost: 1 },
-  { id: 2, name: 'WHALE', emoji: '🐋', minInvest: 10000, lockDays: 180, holdDays: 180, apr: 18, bonus: 10, boost: 1 },
-  { id: 3, name: 'DIAMOND', emoji: '💎', minInvest: 100, lockDays: 90, holdDays: 90, apr: 25, bonus: 15, boost: 2, isLP: true },
+  { 
+    id: 0, 
+    name: 'SILVER', 
+    icon: '🥈', 
+    minInvest: 200, 
+    lockDays: 30, 
+    holdDays: 60, 
+    apr: 15, 
+    bonus: 10, 
+    boost: 1,
+    color: '#C0C0C0',
+    gradient: 'linear-gradient(135deg, #E8E8E8 0%, #C0C0C0 50%, #A8A8A8 100%)'
+  },
+  { 
+    id: 1, 
+    name: 'GOLD', 
+    icon: '🥇', 
+    minInvest: 500, 
+    lockDays: 90, 
+    holdDays: 90, 
+    apr: 18, 
+    bonus: 10, 
+    boost: 1,
+    color: '#D4AF37',
+    gradient: 'linear-gradient(135deg, #FFF1A8 0%, #D4AF37 50%, #B8860B 100%)'
+  },
+  { 
+    id: 2, 
+    name: 'WHALE', 
+    icon: '🐋', 
+    minInvest: 10000, 
+    lockDays: 180, 
+    holdDays: 180, 
+    apr: 18, 
+    bonus: 10, 
+    boost: 1,
+    color: '#4169E1',
+    gradient: 'linear-gradient(135deg, #6B8DD6 0%, #4169E1 50%, #2E4FA3 100%)'
+  },
 ];
+
+// V5 Diamond Tier (LP stakers - 2x boost!)
+const V5_DIAMOND_TIER = {
+  id: 3,
+  name: 'DIAMOND',
+  icon: '💎',
+  minInvest: 100,
+  lockDays: 90,
+  holdDays: 90,
+  apr: 25,
+  bonus: 15,
+  boost: 2,
+  isLP: true,
+  color: '#00BCD4',
+  gradient: 'linear-gradient(135deg, #B9F2FF 0%, #00BCD4 50%, #008BA3 100%)'
+};
 
 // V5 Dynamic APR (reduces as TVL grows)
 const TVL_PHASES = [
@@ -2494,7 +2545,7 @@ export default function App() {
     if (!stakeAmount || parseFloat(stakeAmount) <= 0) return;
     
     const amount = parseFloat(stakeAmount);
-    const tierData = isLP ? DIAMOND_TIER : STAKING_TIERS[selectedTier];
+    const tierData = isLP ? V5_DIAMOND_TIER : V5_STAKING_TIERS[selectedTier];
     
     // TESTNET MODE - Simulate staking
     if (TESTNET_MODE) {
@@ -2796,7 +2847,7 @@ export default function App() {
               </div>
 
               <div className="tiers-grid">
-                {STAKING_TIERS.map((tier) => (
+                {V5_STAKING_TIERS.map((tier) => (
                   <div
                     key={tier.id}
                     className={`tier-card ${selectedTier === tier.id && !isLP ? 'selected' : ''}`}
@@ -2805,6 +2856,7 @@ export default function App() {
                   >
                     <div className="tier-icon">{tier.icon}</div>
                     <div className="tier-name" style={{ color: tier.color }}>{tier.name}</div>
+                    <div className="tier-min-invest" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Min: ${tier.minInvest.toLocaleString()}</div>
                     <div className="tier-apr-container">
                       <div className="tier-apr gold-text">{tier.apr}%</div>
                       <div className="tier-apr-label">APR</div>
@@ -2827,25 +2879,26 @@ export default function App() {
                   className={`tier-card diamond ${isLP ? 'selected' : ''}`}
                   onClick={() => { setSelectedTier(3); setIsLP(true); }}
                 >
-                  <div className="tier-icon">{DIAMOND_TIER.icon}</div>
-                  <div className="tier-name" style={{ color: DIAMOND_TIER.color }}>{DIAMOND_TIER.name}</div>
-                  <div className="tier-subtitle">URMOM/DTGC LP STAKE + DTGC</div>
+                  <div className="tier-icon">{V5_DIAMOND_TIER.icon}</div>
+                  <div className="tier-name" style={{ color: V5_DIAMOND_TIER.color }}>{V5_DIAMOND_TIER.name}</div>
+                  <div className="tier-subtitle">URMOM/DTGC LP • 2x BOOST!</div>
+                  <div className="tier-min-invest" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Min: ${V5_DIAMOND_TIER.minInvest}</div>
                   <div className="tier-apr-container">
-                    <div className="tier-apr" style={{ color: 'var(--diamond-dark)' }}>{DIAMOND_TIER.apr}%</div>
-                    <div className="tier-apr-label">APR</div>
+                    <div className="tier-apr" style={{ color: 'var(--diamond-dark)' }}>{V5_DIAMOND_TIER.apr * V5_DIAMOND_TIER.boost}%</div>
+                    <div className="tier-apr-label">EFFECTIVE APR</div>
                   </div>
                   <div className="tier-features">
                     <div className="tier-feature">
                       <span className="tier-feature-label">Lock</span>
-                      <span className="tier-feature-value">{DIAMOND_TIER.lockDays} Days</span>
+                      <span className="tier-feature-value">{V5_DIAMOND_TIER.lockDays} Days</span>
                     </div>
                     <div className="tier-feature">
                       <span className="tier-feature-label">Bonus</span>
-                      <span className="tier-feature-value">+{DIAMOND_TIER.bonus}%</span>
+                      <span className="tier-feature-value">+{V5_DIAMOND_TIER.bonus}%</span>
                     </div>
                     <div className="tier-feature">
                       <span className="tier-feature-label">Boost</span>
-                      <span className="tier-feature-value">1x → 1.5x</span>
+                      <span className="tier-feature-value" style={{ color: '#4CAF50', fontWeight: '700' }}>2x!</span>
                     </div>
                   </div>
                   <span className="tier-badge lp">LP</span>
@@ -2856,7 +2909,7 @@ export default function App() {
               {selectedTier !== null && account && (
                 <div className="staking-panel">
                   <h3 className="panel-title gold-text">
-                    {isLP ? '💎 STAKE LP TOKENS' : `${STAKING_TIERS[selectedTier]?.icon} STAKE DTGC`}
+                    {isLP ? '💎 STAKE LP TOKENS' : `${V5_STAKING_TIERS[selectedTier]?.icon} STAKE DTGC`}
                   </h3>
 
                   <div className="input-group">
@@ -3437,7 +3490,7 @@ export default function App() {
         onClose={() => setModalOpen(false)}
         type={modalType}
         amount={stakeAmount}
-        tier={isLP ? 'Diamond' : STAKING_TIERS[selectedTier]?.name}
+        tier={isLP ? 'Diamond' : V5_STAKING_TIERS[selectedTier]?.name}
       />
 
       {/* Toast */}
