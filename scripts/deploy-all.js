@@ -5,7 +5,7 @@ const hre = require("hardhat");
 
 const DTGC_ADDRESS = "0xD0676B28a457371D58d47E5247b439114e40Eb0F";
 const URMOM_ADDRESS = "0xe43b3cEE3554e120213b8B69Caf690B6C04A7ec0";
-const LP_TOKEN_ADDRESS = "0x0000000000000000000000000000000000000000"; // Update after creating LP
+const LP_TOKEN_ADDRESS = "0x1891bD6A959B32977c438f3022678a8659364A72"; // Update after creating LP
 
 async function main() {
   console.log("\n╔═══════════════════════════════════════════════════════════╗");

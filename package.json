@@ -1,0 +1,29 @@
+{
+  "name": "dt-gold-coin",
+  "version": "1.0.0",
+  "description": "Rewards and scarcity program, of 1 billion supply",
+  "main": "hardhat.config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Darth30/DT-GOLD-COIN.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Darth30/DT-GOLD-COIN/issues"
+  },
+  "homepage": "https://github.com/Darth30/DT-GOLD-COIN#readme",
+  "dependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^4.0.0",
+    "dotenv": "^17.2.3",
+    "ethers": "^6.16.0",
+    "hardhat": "^2.28.1"
+  }
+}
