@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-//                    DTGC STAKING V2 - CONSTANTS
+//                    DTGC STAKING - CONSTANTS
 //                         dump.tires
 // ═══════════════════════════════════════════════════════════════
 
@@ -9,18 +9,15 @@ export const CHAIN_NAME = 'PulseChain';
 export const RPC_URL = 'https://rpc.pulsechain.com';
 export const EXPLORER = 'https://scan.pulsechain.com';
 
-// V2 Contracts (LIVE)
+// Contracts
 export const CONTRACTS = {
-  DAO_VOTING: '0x91DFFcC31C68Ef0C1F2ad49554E85bB7536fA470',
+  DTGC: '0xD0676B28a457371D58d47E5247b439114e40Eb0F',
+  URMOM: '0xe43b3cEE3554e120213b8B69Caf690B6C04A7ec0',
+  LP_TOKEN: '0x1891bD6A959B32977c438f3022678a8659364A72',
   STAKING_V2: '0x0c1984e3804Bd74DAaB66c4540bBeac751efB643',
   LP_STAKING_V2: '0x0b07eD8929884E9bBDEAD6B42465F2A265044f18',
+  DAO_VOTING: '0x91DFFcC31C68Ef0C1F2ad49554E85bB7536fA470',
   DAO_TREASURY: '0x22289ce7d7B962e804E9C8C6C57D2eD4Ffe0AbFC',
-};
-
-// V1 Contracts (Legacy)
-export const CONTRACTS_V1 = {
-  STAKING: '0x1D12a24e62d25A6b0043AF72c20af08794e266b4',
-  LP_STAKING: '0x76965310848457AdcF10b09CAebB90ba3B7ACcb0',
 };
 
 // Tokens
@@ -55,7 +52,6 @@ export const STAKING_TIERS = [
     apr: 2.5,
     bonus: 0.5,
     color: '#CD7F32',
-    gradient: 'linear-gradient(135deg, #CD7F32 0%, #8B4513 100%)',
   },
   {
     id: 1,
@@ -65,7 +61,6 @@ export const STAKING_TIERS = [
     apr: 6,
     bonus: 1.5,
     color: '#C0C0C0',
-    gradient: 'linear-gradient(135deg, #E8E8E8 0%, #A8A8A8 100%)',
   },
   {
     id: 2,
@@ -75,7 +70,6 @@ export const STAKING_TIERS = [
     apr: 9,
     bonus: 4,
     color: '#FFD700',
-    gradient: 'linear-gradient(135deg, #FFD700 0%, #B8860B 100%)',
   },
 ];
 
@@ -86,8 +80,7 @@ export const DIAMOND_TIER = {
   lockDays: 90,
   apr: 12,
   bonus: 5,
-  color: '#B9F2FF',
-  gradient: 'linear-gradient(135deg, #E0F7FA 0%, #4DD0E1 50%, #00ACC1 100%)',
+  color: '#00BCD4',
   isLP: true,
 };
 
@@ -123,7 +116,6 @@ export const STAKING_V2_ABI = [
   "function calculateAllRewards(address user) external view returns (uint256 base, uint256 feeShare, uint256 bonus)",
   "function getContractStats() external view returns (uint256 totalStaked, uint256 totalRewards, uint256 feePool, uint256 eesPool, uint256 stakers)",
   "function canVote(address user) external view returns (bool)",
-  "function isVerifiedStaker(address user) external view returns (bool)",
 ];
 
 export const LP_STAKING_V2_ABI = [
@@ -144,7 +136,6 @@ export const DAO_VOTING_ABI = [
   "function getProposal(uint256 id) external view returns (uint256 amount, uint256 endTime, uint256[4] votes, uint256 totalVoters, bool executed, uint8 winner)",
   "function getActiveProposal() external view returns (uint256)",
   "function canVote(address user) external view returns (bool)",
-  "function getVotingStats() external view returns (uint256 totalBurned, uint256 totalLiquidity, uint256 totalTreasury, uint256 proposalCount)",
 ];
 
 export const ERC20_ABI = [

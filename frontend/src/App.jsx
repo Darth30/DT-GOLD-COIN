@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
 import { ethers } from 'ethers';
 import {
   CONTRACTS,
@@ -19,44 +19,192 @@ import {
 /*
     ╔═══════════════════════════════════════════════════════════════╗
     ║                                                               ║
-    ║     🏆 DTGC PREMIUM STAKING PLATFORM 🏆                      ║
+    ║     🏆 DTGC PREMIUM STAKING PLATFORM V5 GOLD EDITION 🏆     ║
     ║                                                               ║
-    ║     ✦ Marbled White & Real Gold Design                       ║
-    ║     ✦ DAO Voting Integration                                 ║
-    ║     ✦ Live Burn Tracker                                      ║
-    ║     ✦ Premium Animations                                     ║
+    ║     ✦ V5 Gold Paper Tokenomics (91% Controlled!)             ║
+    ║     ✦ Video Integration (Popup, Stake, Whitepaper)           ║
+    ║     ✦ Light/Dark Mode + White Marble Background              ║
+    ║     ✦ Live URMOM/DTGC Prices from DexScreener                ║
+    ║     ✦ Full Burn Stats + DAO Voting                           ║
     ║                                                               ║
     ║                    dump.tires                                 ║
     ╚═══════════════════════════════════════════════════════════════╝
 */
 
 // ═══════════════════════════════════════════════════════════════
-//                    BURNED LP DATA (REAL)
+//                    DTGC TOKENOMICS (1 BILLION SUPPLY)
 // ═══════════════════════════════════════════════════════════════
 
-const BURNED_LPS = [
-  { name: 'URMOM/PLS', address: '0x682B82baAC38dDb185D77deAF98D9D246EF9c9E5', plpBurned: 87226017 },
-  { name: 'URMOM/DTGC', address: '0x1891bD6A959B32977c438f3022678a8659364A72', plpBurned: 64850000 },
-  { name: 'URMOM/pHEX', address: '0x6Bd31Cdc8c87F3bE93bEaC2E4F58DAeEf1f7905e', plpBurned: 61000000 },
-  { name: 'URMOM/INC', address: '0xc8EC3c754B259fB7503072058A71d00cc20121DF', plpBurned: 3000000 },
-  { name: 'URMOM/pWBTC', address: '0xccD9751D7E04cF8c8F95D5a06C900f7a2D0a2cA1', plpBurned: 0 },
+// ═══════════════════════════════════════════════════════════════
+//                    V5 GOLD PAPER TOKENOMICS (91% CONTROLLED)
+// ═══════════════════════════════════════════════════════════════
+
+const DTGC_TOKENOMICS = {
+  totalSupply: 1000000000,
+  daoPool: 500000000,        // 50% - DAO Rewards Pool (staking)
+  devWallet: 323000000,      // 32.3% - Dev Wallet
+  circulating: 90000000,     // 9% - Circulating (ULTRA LOW FLOAT!)
+  lpLocked: 87000000,        // 8.7% - LP Locked
+};
+
+// V5 Fee Structure
+const V5_FEES = {
+  entryFee: 5,               // 5% entry fee
+  exitFeeDiamond: 2,         // 2% exit for diamond hands (60+ days)
+  exitFeeEarly: 20,          // 20% exit for paper hands (<60 days)
+};
+
+// V5 Staking Tiers
+const V5_STAKING_TIERS = [
+  { id: 0, name: 'SILVER', emoji: '🥈', minInvest: 200, lockDays: 30, holdDays: 60, apr: 15, bonus: 10, boost: 1 },
+  { id: 1, name: 'GOLD', emoji: '🥇', minInvest: 500, lockDays: 90, holdDays: 90, apr: 18, bonus: 10, boost: 1 },
+  { id: 2, name: 'WHALE', emoji: '🐋', minInvest: 10000, lockDays: 180, holdDays: 180, apr: 18, bonus: 10, boost: 1 },
+  { id: 3, name: 'DIAMOND', emoji: '💎', minInvest: 100, lockDays: 90, holdDays: 90, apr: 25, bonus: 15, boost: 2, isLP: true },
 ];
 
-const BURN_BREAKDOWN = [
-  { pool: 'PTGC Pool', amount: 31232571 },
-  { pool: 'PLS Pool', amount: 26643051 },
-  { pool: 'HEX Pool', amount: 11919546 },
-  { pool: 'PLSX Pool', amount: 11093073 },
-  { pool: 'PLS Pool 2', amount: 6117908 },
-  { pool: 'INC Pool', amount: 10068493 },
-  { pool: 'pHEX Pool', amount: 5975013 },
+// V5 Dynamic APR (reduces as TVL grows)
+const TVL_PHASES = [
+  { maxTVL: 50000000, multiplier: 1.0, name: "Genesis" },
+  { maxTVL: 100000000, multiplier: 0.85, name: "Early" },
+  { maxTVL: 200000000, multiplier: 0.7, name: "Growth" },
+  { maxTVL: 350000000, multiplier: 0.5, name: "Mature" },
+  { maxTVL: 500000000, multiplier: 0.35, name: "Saturated" },
 ];
+
+// ═══════════════════════════════════════════════════════════════
+//                    LIVE BURN DATA (ACCURATE FROM DEXSCREENER)
+// ═══════════════════════════════════════════════════════════════
+
+// DexScreener API endpoints for live prices
+const DEXSCREENER_API = {
+  urmom: 'https://api.dexscreener.com/latest/dex/pairs/pulsechain/0x0548656e272fec9534e180d3174cfc57ab6e10c0',
+  dtgc: 'https://api.dexscreener.com/latest/dex/pairs/pulsechain/0x0b0a8a0b7546ff180328aa155d2405882c7ac8c7',
+};
+
+// Default/fallback prices (updated when API fails)
+const DEFAULT_PRICES = {
+  urmomPrice: 0.0003515,
+  dtgcPrice: 0.0001851,
+};
+
+const BURN_STATS = {
+  // URMOM Token Stats - ACCURATE FROM DEXSCREENER
+  // https://dexscreener.com/pulsechain/0x0548656e272fec9534e180d3174cfc57ab6e10c0
+  urmomPrice: 0.0003515,  // $0.0003515 - LIVE PRICE
+  // DTGC - https://dexscreener.com/pulsechain/0x0b0a8a0b7546ff180328aa155d2405882c7ac8c7
+  dtgcPrice: 0.0001851,   // $0.0001851 - LIVE PRICE
+  urmomMarketCap: 159727, // Based on circulating supply * price
+  urmomTotalSupply: 1000000000,
+  
+  // Dead Wallet Burns
+  deadWallets: {
+    '0x0000000000000000000000000000000000000000': 0,
+    '0x000000000000000000000000000000000000dEaD': 0,
+    '0x0000000000000000000000000000000000000369': 545616403.14,
+  },
+  totalDeadWallet: 545616403.14,
+  burnedUSD: 576170.92,
+  burnPercentage: 54.5616,
+
+  // LP Burn Percentages
+  lpBurnPercentages: [
+    { pair: 'URMOM/HEX', percentage: 99.2237 },
+    { pair: 'URMOM/INC', percentage: 99.5773 },
+    { pair: 'URMOM/eHEX', percentage: 99.6719 },
+    { pair: 'URMOM/PLS', percentage: 99.0 },
+    { pair: 'URMOM/PLSX', percentage: 98.5 },
+    { pair: 'URMOM/PTGC', percentage: 99.8 },
+  ],
+
+  // LP URMOM Token Breakdown
+  lpUrmomBreakdown: [
+    { pool: 'PTGC Pool', tokens: 31232571, color: '#FFD700' },
+    { pool: 'PLS Pool', tokens: 26643051, color: '#00D4AA' },
+    { pool: 'HEX Pool', tokens: 11919546, color: '#FF6B6B' },
+    { pool: 'PLSX Pool', tokens: 11093073, color: '#9B59B6' },
+    { pool: 'PLS Pool 2', tokens: 6117908, color: '#3498DB' },
+    { pool: 'INC Pool', tokens: 10068493, color: '#E74C3C' },
+    { pool: 'pHEX Pool', tokens: 5975013, color: '#F39C12' },
+  ],
+
+  // LP Pool Addresses
+  lpPools: [
+    { name: 'URMOM/DTGC', address: '0x1891bD6A959B32977c438f3022678a8659364A72' },
+    { name: 'URMOM/PLS', address: '0x682B82baAC38dDb185D77deAF98D9D246EF9c9E5' },
+    { name: 'URMOM/HEX', address: '0x0548656e272fec9534e180d3174cfc57ab6e10c0' },
+    { name: 'URMOM/pHEX', address: '0x6Bd31Cdc8c87F3bE93bEaC2E4F58DAeEf1f7905e' },
+    { name: 'URMOM/INC', address: '0xc8EC3c754B259fB7503072058A71d00cc20121DF' },
+  ],
+};
+
+// Calculate with accurate price
+const totalLPUrmom = BURN_STATS.lpUrmomBreakdown.reduce((sum, p) => sum + p.tokens, 0);
+const plsPrice = 0.00003;
+
+// ═══════════════════════════════════════════════════════════════
+//                    SOCIAL & CONTRACT LINKS
+// ═══════════════════════════════════════════════════════════════
+
+const SOCIAL_LINKS = {
+  xUrmom: 'https://x.com/UrmomPulse',
+  xDumpTires: 'https://x.com/Dump_Tires',
+  telegram: 'https://t.me/urmomPulse',
+  website: 'https://dump.tires',
+  dexscreener: 'https://dexscreener.com/pulsechain/0x0548656e272fec9534e180d3174cfc57ab6e10c0',
+  dexscreenerDTGC: 'https://dexscreener.com/pulsechain/0x0b0a8a0b7546ff180328aa155d2405882c7ac8c7',
+  coingecko: 'https://www.coingecko.com/en/coins/urmom-3',
+};
+
+const CONTRACT_ADDRESSES = {
+  dtgc: '0xD0676B28a457371D58d47E5247b439114e40Eb0F',
+  urmom: '0xe43b3cEE3554e120213b8B69Caf690B6C04A7ec0',
+  lp: '0x1891bD6A959B32977c438f3022678a8659364A72',
+  daoTreasury: '0x22289ce7d7B962e804E9C8C6C57D2eD4Ffe0AbFC',
+  stakingV2: '0x0c1984e3804Bd74DAaB66c4540bBeac751efB643',
+  lpStakingV2: '0x0b07eD8929884E9bBDEAD6B42465F2A265044f18',
+  daoVoting: '0x91DFFcC31C68Ef0C1F2ad49554E85bB7536fA470',
+  burn: '0x0000000000000000000000000000000000000369',
+};
+
+// ═══════════════════════════════════════════════════════════════
+//                    VIDEO PATHS (ENABLED)
+// ═══════════════════════════════════════════════════════════════
+
+const VIDEOS_ENABLED = true; // Videos are enabled!
+
+const VIDEOS = {
+  stake: '/videos/stake-video.mov',
+  popup: '/videos/popup-video.mov',
+  whitepaper: '/videos/whitepaper-video.mov',
+};
+
+// ═══════════════════════════════════════════════════════════════
+//                    🧪 TESTNET MODE - PUBLIC TESTING
+// ═══════════════════════════════════════════════════════════════
+
+const TESTNET_MODE = true; // SET TO false FOR MAINNET
+
+const TESTNET_CONFIG = {
+  startingPLS: 100000000,      // 100M PLS
+  startingDTGC: 50000000,      // 50M DTGC  
+  startingURMOM: 25000000,     // 25M URMOM
+  startingLP: 1000000,         // 1M LP tokens
+  simulatedAPR: true,          // Show simulated rewards
+  faucetCooldown: 0,           // No cooldown for testing
+};
+
+// ═══════════════════════════════════════════════════════════════
+//                    THEME CONTEXT
+// ═══════════════════════════════════════════════════════════════
+
+const ThemeContext = createContext();
+const useTheme = () => useContext(ThemeContext);
 
 // ═══════════════════════════════════════════════════════════════
 //                         STYLES
 // ═══════════════════════════════════════════════════════════════
 
-const styles = `
+const getStyles = (isDark) => `
   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap');
 
   * {
@@ -75,39 +223,89 @@ const styles = `
     --platinum-shine: #F8F8F8;
     --diamond: #B9F2FF;
     --diamond-dark: #00BCD4;
-    --emerald: #50C878;
-    --ruby: #E0115F;
-    --marble-white: #FEFEFE;
-    --marble-gray: #F5F5F5;
-    --marble-vein: #E8E8E8;
-    --obsidian: #0D0D0D;
-    --charcoal: #1A1A1A;
-    --text-dark: #1A1A1A;
-    --text-medium: #4A4A4A;
-    --text-light: #7A7A7A;
-    --success: #2E7D32;
-    --error: #C62828;
-    --glow-gold: 0 0 40px rgba(212, 175, 55, 0.4);
-    --glow-diamond: 0 0 40px rgba(0, 188, 212, 0.4);
-    --shadow-luxury: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    
+    --bg-primary: ${isDark ? '#0D0D0D' : '#FEFEFE'};
+    --bg-secondary: ${isDark ? '#1A1A1A' : '#F5F5F5'};
+    --bg-card: ${isDark ? '#1E1E1E' : '#FFFFFF'};
+    --text-primary: ${isDark ? '#FFFFFF' : '#1A1A1A'};
+    --text-secondary: ${isDark ? '#B0B0B0' : '#4A4A4A'};
+    --text-muted: ${isDark ? '#707070' : '#7A7A7A'};
+    --border-color: ${isDark ? '#333333' : '#E8E8E8'};
+    
+    --glow-gold: 0 0 40px rgba(212, 175, 55, ${isDark ? '0.5' : '0.3'});
+    --glow-diamond: 0 0 40px rgba(0, 188, 212, ${isDark ? '0.5' : '0.3'});
+    --shadow-luxury: 0 25px 50px -12px rgba(0, 0, 0, ${isDark ? '0.4' : '0.15'});
   }
 
-  html {
-    scroll-behavior: smooth;
-  }
+  html { scroll-behavior: smooth; }
 
   body {
     font-family: 'Montserrat', sans-serif;
-    background: var(--marble-white);
+    background: var(--bg-primary);
     min-height: 100vh;
-    color: var(--text-dark);
+    color: var(--text-primary);
     overflow-x: hidden;
+    transition: background 0.3s ease, color 0.3s ease;
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-                        ANIMATIONS
-     ═══════════════════════════════════════════════════════════════ */
+  /* Marble Background */
+  .marble-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    background: var(--bg-primary);
+  }
 
+  .marble-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      ${isDark ? `
+        radial-gradient(ellipse at 20% 30%, rgba(212, 175, 55, 0.08) 0%, transparent 40%),
+        radial-gradient(ellipse at 80% 70%, rgba(212, 175, 55, 0.05) 0%, transparent 40%),
+        radial-gradient(ellipse at 50% 50%, rgba(100, 100, 100, 0.1) 0%, transparent 60%)
+      ` : `
+        radial-gradient(ellipse at 20% 30%, rgba(212, 175, 55, 0.06) 0%, transparent 40%),
+        radial-gradient(ellipse at 80% 70%, rgba(212, 175, 55, 0.04) 0%, transparent 40%),
+        radial-gradient(ellipse at 50% 50%, rgba(200, 200, 200, 0.3) 0%, transparent 60%)
+      `};
+  }
+
+  .marble-bg::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 1000 1000' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: ${isDark ? '0.03' : '0.04'};
+    mix-blend-mode: overlay;
+  }
+
+  .marble-veins {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .vein {
+    position: absolute;
+    background: linear-gradient(90deg, transparent 0%, ${isDark ? 'rgba(212, 175, 55, 0.08)' : 'rgba(180, 180, 180, 0.15)'} 50%, transparent 100%);
+    transform-origin: center;
+  }
+
+  .vein-1 { top: 10%; left: -10%; width: 60%; height: 1px; transform: rotate(25deg); }
+  .vein-2 { top: 30%; right: -10%; width: 50%; height: 1px; transform: rotate(-15deg); }
+  .vein-3 { top: 50%; left: -5%; width: 40%; height: 1px; transform: rotate(35deg); }
+  .vein-4 { top: 70%; right: -5%; width: 55%; height: 1px; transform: rotate(-25deg); }
+  .vein-5 { top: 85%; left: 20%; width: 45%; height: 1px; transform: rotate(10deg); }
+
+  /* Animations */
   @keyframes shimmer {
     0% { background-position: -200% center; }
     100% { background-position: 200% center; }
@@ -123,15 +321,14 @@ const styles = `
     50% { box-shadow: 0 0 40px rgba(212, 175, 55, 0.6); }
   }
 
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.05); }
+  }
+
   @keyframes rotate-slow {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
-  }
-
-  @keyframes gradient-shift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
   }
 
   @keyframes particle-rise {
@@ -139,28 +336,6 @@ const styles = `
     10% { opacity: 1; }
     90% { opacity: 1; }
     100% { transform: translateY(-100vh) scale(1); opacity: 0; }
-  }
-
-  @keyframes glow-pulse {
-    0%, 100% { filter: drop-shadow(0 0 10px currentColor); }
-    50% { filter: drop-shadow(0 0 25px currentColor); }
-  }
-
-  @keyframes border-dance {
-    0% { border-color: var(--gold); }
-    33% { border-color: var(--diamond); }
-    66% { border-color: var(--gold-light); }
-    100% { border-color: var(--gold); }
-  }
-
-  @keyframes count-up {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  @keyframes slide-in-right {
-    from { opacity: 0; transform: translateX(50px); }
-    to { opacity: 1; transform: translateX(0); }
   }
 
   @keyframes slide-in-up {
@@ -175,18 +350,32 @@ const styles = `
     75% { transform: scale(1.01) rotate(0deg); filter: brightness(1.05); }
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-                        PARTICLES BACKGROUND
-     ═══════════════════════════════════════════════════════════════ */
+  @keyframes glow-pulse {
+    0%, 100% { filter: drop-shadow(0 0 10px currentColor); }
+    50% { filter: drop-shadow(0 0 25px currentColor); }
+  }
 
+  @keyframes modal-in {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes modal-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.9); }
+  }
+
+  @keyframes backdrop-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  /* Particles */
   .particles-container {
     position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0;
     pointer-events: none;
-    z-index: 0;
+    z-index: 1;
     overflow: hidden;
   }
 
@@ -200,39 +389,11 @@ const styles = `
     opacity: 0;
   }
 
-  .particle:nth-child(odd) {
-    background: var(--diamond);
-  }
+  .particle:nth-child(odd) { background: var(--diamond); }
 
-  /* ═══════════════════════════════════════════════════════════════
-                        MARBLE TEXTURE
-     ═══════════════════════════════════════════════════════════════ */
-
-  .marble-texture {
-    background: 
-      linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(248,248,248,0.95) 100%),
-      repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 10px,
-        rgba(200,200,200,0.03) 10px,
-        rgba(200,200,200,0.03) 20px
-      );
-  }
-
-  /* ═══════════════════════════════════════════════════════════════
-                        GOLD EFFECTS
-     ═══════════════════════════════════════════════════════════════ */
-
+  /* Gold Text */
   .gold-text {
-    background: linear-gradient(
-      135deg, 
-      var(--gold-bright) 0%, 
-      var(--gold-light) 25%, 
-      var(--gold) 50%, 
-      var(--gold-dark) 75%, 
-      var(--gold-deep) 100%
-    );
+    background: linear-gradient(135deg, var(--gold-bright) 0%, var(--gold-light) 25%, var(--gold) 50%, var(--gold-dark) 75%, var(--gold-deep) 100%);
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -240,50 +401,34 @@ const styles = `
     animation: shimmer 3s linear infinite;
   }
 
-  .gold-border {
-    border: 2px solid transparent;
-    background: linear-gradient(white, white) padding-box,
-                linear-gradient(135deg, var(--gold-light), var(--gold), var(--gold-dark)) border-box;
-  }
-
-  .gold-glow {
-    animation: pulse-gold 2s ease-in-out infinite;
-  }
-
-  /* ═══════════════════════════════════════════════════════════════
-                        APP CONTAINER
-     ═══════════════════════════════════════════════════════════════ */
-
+  /* App Container */
   .app-container {
     min-height: 100vh;
     position: relative;
-    z-index: 1;
+    z-index: 2;
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-                        NAVIGATION
-     ═══════════════════════════════════════════════════════════════ */
-
+  /* Navigation */
   .nav-header {
     position: fixed;
     top: 0;
     left: 0;
     right: 0;
     z-index: 1000;
-    background: rgba(255, 255, 255, 0.95);
+    background: ${isDark ? 'rgba(13, 13, 13, 0.95)' : 'rgba(255, 255, 255, 0.95)'};
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid var(--marble-vein);
+    border-bottom: 1px solid var(--border-color);
     transition: all 0.3s ease;
   }
 
   .nav-header.scrolled {
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, ${isDark ? '0.3' : '0.1'});
   }
 
   .nav-content {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 16px 40px;
+    padding: 14px 40px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -292,12 +437,12 @@ const styles = `
   .logo-section {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
   }
 
   .logo-mark {
-    width: 50px;
-    height: 50px;
+    width: 46px;
+    height: 46px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%);
     display: flex;
@@ -305,43 +450,40 @@ const styles = `
     justify-content: center;
     font-family: 'Cinzel', serif;
     font-weight: 900;
-    font-size: 1.2rem;
-    color: var(--charcoal);
+    font-size: 1.1rem;
+    color: #1A1A1A;
     box-shadow: var(--glow-gold);
     animation: float 3s ease-in-out infinite;
   }
 
-  .logo-text-group {
-    display: flex;
-    flex-direction: column;
-  }
+  .logo-text-group { display: flex; flex-direction: column; }
 
   .logo-text {
     font-family: 'Cinzel', serif;
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: 3px;
   }
 
   .logo-tagline {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 0.75rem;
-    color: var(--text-light);
+    font-size: 0.7rem;
+    color: var(--text-muted);
     letter-spacing: 4px;
     text-transform: uppercase;
   }
 
   .nav-links {
     display: flex;
-    gap: 8px;
+    gap: 6px;
   }
 
   .nav-link {
-    padding: 12px 24px;
+    padding: 10px 16px;
     font-family: 'Montserrat', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 600;
-    color: var(--text-medium);
+    color: var(--text-secondary);
     background: transparent;
     border: none;
     border-radius: 30px;
@@ -350,7 +492,6 @@ const styles = `
     letter-spacing: 1px;
     text-transform: uppercase;
     position: relative;
-    overflow: hidden;
   }
 
   .nav-link::before {
@@ -365,22 +506,41 @@ const styles = `
     transform: translateX(-50%);
   }
 
-  .nav-link:hover::before,
-  .nav-link.active::before {
-    width: 80%;
+  .nav-link:hover::before, .nav-link.active::before { width: 80%; }
+  .nav-link:hover, .nav-link.active { color: var(--gold); }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
-  .nav-link:hover,
-  .nav-link.active {
-    color: var(--gold-dark);
+  .theme-toggle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+  }
+
+  .theme-toggle:hover {
+    background: var(--gold);
+    border-color: var(--gold);
+    transform: rotate(180deg);
   }
 
   .connect-btn {
-    padding: 14px 32px;
+    padding: 10px 24px;
     font-family: 'Montserrat', sans-serif;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 700;
-    color: var(--charcoal);
+    color: #1A1A1A;
     background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%);
     background-size: 200% auto;
     border: none;
@@ -399,67 +559,51 @@ const styles = `
   }
 
   .connect-btn.connected {
-    background: linear-gradient(135deg, var(--platinum-shine) 0%, var(--platinum) 100%);
+    background: ${isDark ? 'rgba(212, 175, 55, 0.2)' : 'var(--platinum)'};
     border: 2px solid var(--gold);
+    color: var(--text-primary);
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-                        HERO SECTION
-     ═══════════════════════════════════════════════════════════════ */
-
+  /* Hero Section */
   .hero-section {
-    padding: 160px 40px 100px;
+    padding: 140px 40px 80px;
     text-align: center;
     position: relative;
-    overflow: hidden;
-  }
-
-  .hero-section::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      radial-gradient(ellipse at top, rgba(212, 175, 55, 0.05) 0%, transparent 50%),
-      radial-gradient(ellipse at bottom, rgba(0, 188, 212, 0.03) 0%, transparent 50%);
-    pointer-events: none;
   }
 
   .hero-badge {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 20px;
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.05) 100%);
+    padding: 8px 18px;
+    background: ${isDark ? 'rgba(212, 175, 55, 0.15)' : 'rgba(212, 175, 55, 0.1)'};
     border: 1px solid rgba(212, 175, 55, 0.3);
     border-radius: 50px;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
-    color: var(--gold-dark);
+    color: var(--gold);
     letter-spacing: 2px;
     text-transform: uppercase;
-    margin-bottom: 24px;
+    margin-bottom: 20px;
     animation: slide-in-up 0.6s ease;
   }
 
   .hero-title {
     font-family: 'Cinzel', serif;
-    font-size: 4.5rem;
+    font-size: 3.5rem;
     font-weight: 900;
     letter-spacing: 6px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
     line-height: 1.1;
     animation: slide-in-up 0.6s ease 0.1s both;
   }
 
   .hero-subtitle {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 1.6rem;
-    color: var(--text-medium);
+    font-size: 1.4rem;
+    color: var(--text-secondary);
     letter-spacing: 3px;
-    margin-bottom: 50px;
+    margin-bottom: 40px;
     font-weight: 400;
     animation: slide-in-up 0.6s ease 0.2s both;
   }
@@ -467,18 +611,18 @@ const styles = `
   .hero-stats {
     display: flex;
     justify-content: center;
-    gap: 60px;
+    gap: 30px;
     flex-wrap: wrap;
     animation: slide-in-up 0.6s ease 0.3s both;
   }
 
   .hero-stat {
     text-align: center;
-    padding: 30px;
-    background: rgba(255, 255, 255, 0.8);
-    border-radius: 20px;
-    border: 1px solid var(--marble-vein);
-    min-width: 180px;
+    padding: 24px 30px;
+    background: var(--bg-card);
+    border-radius: 18px;
+    border: 1px solid var(--border-color);
+    min-width: 150px;
     transition: all 0.3s ease;
   }
 
@@ -490,48 +634,45 @@ const styles = `
 
   .hero-stat-value {
     font-family: 'Cinzel', serif;
-    font-size: 2.5rem;
+    font-size: 1.8rem;
     font-weight: 800;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   .hero-stat-label {
-    font-size: 0.75rem;
-    color: var(--text-light);
+    font-size: 0.65rem;
+    color: var(--text-muted);
     text-transform: uppercase;
     letter-spacing: 2px;
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-                        MAIN CONTENT
-     ═══════════════════════════════════════════════════════════════ */
-
+  /* Main Content */
   .main-content {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 40px 100px;
+    padding: 0 40px 80px;
   }
 
   .section {
-    margin-bottom: 80px;
+    margin-bottom: 60px;
     animation: slide-in-up 0.6s ease both;
   }
 
   .section-header {
     text-align: center;
-    margin-bottom: 50px;
+    margin-bottom: 40px;
   }
 
   .section-title {
     font-family: 'Cinzel', serif;
-    font-size: 2.2rem;
+    font-size: 1.8rem;
     font-weight: 700;
     letter-spacing: 4px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
   }
 
   .section-divider {
-    width: 120px;
+    width: 100px;
     height: 3px;
     background: linear-gradient(90deg, transparent, var(--gold), transparent);
     margin: 0 auto;
@@ -539,37 +680,32 @@ const styles = `
 
   .section-description {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 1.1rem;
-    color: var(--text-medium);
-    margin-top: 16px;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    margin-top: 14px;
     letter-spacing: 1px;
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-                        TIER CARDS
-     ═══════════════════════════════════════════════════════════════ */
-
+  /* Tier Cards */
   .tiers-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
+    gap: 20px;
   }
 
-  @media (max-width: 1200px) {
-    .tiers-grid { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  @media (max-width: 768px) {
+  @media (max-width: 1200px) { .tiers-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 768px) { 
     .tiers-grid { grid-template-columns: 1fr; }
-    .hero-title { font-size: 2.5rem; }
-    .nav-content { flex-direction: column; gap: 16px; }
+    .hero-title { font-size: 2.2rem; }
+    .nav-content { flex-direction: column; gap: 14px; }
     .nav-links { display: none; }
+    .main-content { padding: 0 20px 50px; }
   }
 
   .tier-card {
-    background: linear-gradient(180deg, #FFFFFF 0%, var(--marble-gray) 100%);
-    border-radius: 24px;
-    padding: 36px 28px;
+    background: var(--bg-card);
+    border-radius: 20px;
+    padding: 28px 20px;
     text-align: center;
     position: relative;
     overflow: hidden;
@@ -584,24 +720,14 @@ const styles = `
     top: 0;
     left: 0;
     right: 0;
-    height: 5px;
+    height: 4px;
     background: var(--tier-gradient);
   }
 
-  .tier-card::after {
-    content: '';
-    position: absolute;
-    top: 5px;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(var(--tier-rgb), 0.03) 100%);
-    pointer-events: none;
-  }
-
   .tier-card:hover {
-    transform: translateY(-12px) scale(1.02);
+    transform: translateY(-8px);
     box-shadow: var(--shadow-luxury);
+    border-color: var(--gold);
   }
 
   .tier-card.selected {
@@ -610,7 +736,7 @@ const styles = `
   }
 
   .tier-card.diamond {
-    background: linear-gradient(180deg, #F0FFFF 0%, #E0F7FA 100%);
+    background: ${isDark ? 'linear-gradient(180deg, #0A1A1F 0%, #0D2530 100%)' : 'linear-gradient(180deg, #F0FFFF 0%, #E0F7FA 100%)'};
   }
 
   .tier-card.diamond::before {
@@ -625,42 +751,48 @@ const styles = `
   }
 
   .tier-icon {
-    font-size: 4rem;
-    margin-bottom: 16px;
+    font-size: 3rem;
+    margin-bottom: 12px;
     animation: float 3s ease-in-out infinite;
   }
 
   .tier-name {
     font-family: 'Cinzel', serif;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 700;
     letter-spacing: 3px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     text-transform: uppercase;
   }
 
-  .tier-apr-container {
-    margin: 20px 0;
+  .tier-subtitle {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--diamond-dark);
+    margin-top: 6px;
+    letter-spacing: 1px;
   }
+
+  .tier-apr-container { margin: 14px 0; }
 
   .tier-apr {
     font-family: 'Cinzel', serif;
-    font-size: 3.5rem;
+    font-size: 2.5rem;
     font-weight: 900;
     line-height: 1;
   }
 
   .tier-apr-label {
-    font-size: 1rem;
-    color: var(--text-light);
+    font-size: 0.85rem;
+    color: var(--text-muted);
     letter-spacing: 2px;
     text-transform: uppercase;
   }
 
   .tier-features {
-    margin-top: 24px;
-    padding-top: 24px;
-    border-top: 1px solid var(--marble-vein);
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
     text-align: left;
   }
 
@@ -668,49 +800,40 @@ const styles = `
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 0;
-    font-size: 0.9rem;
+    padding: 6px 0;
+    font-size: 0.8rem;
   }
 
-  .tier-feature-label {
-    color: var(--text-light);
-  }
-
-  .tier-feature-value {
-    font-weight: 600;
-    color: var(--text-dark);
-  }
+  .tier-feature-label { color: var(--text-muted); }
+  .tier-feature-value { font-weight: 600; color: var(--text-primary); }
 
   .tier-badge {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    padding: 6px 12px;
-    font-size: 0.65rem;
+    top: 14px;
+    right: 14px;
+    padding: 4px 8px;
+    font-size: 0.55rem;
     font-weight: 700;
     letter-spacing: 1px;
     text-transform: uppercase;
     border-radius: 20px;
     background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
-    color: var(--charcoal);
+    color: #1A1A1A;
   }
 
   .tier-badge.lp {
     background: linear-gradient(135deg, var(--diamond) 0%, var(--diamond-dark) 100%);
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-                        STAKING FORM
-     ═══════════════════════════════════════════════════════════════ */
-
+  /* Staking Panel */
   .staking-panel {
-    max-width: 650px;
-    margin: 60px auto 0;
-    background: linear-gradient(180deg, #FFFFFF 0%, var(--marble-gray) 100%);
-    border-radius: 32px;
-    padding: 48px;
+    max-width: 550px;
+    margin: 40px auto 0;
+    background: var(--bg-card);
+    border-radius: 24px;
+    padding: 36px;
     box-shadow: var(--shadow-luxury);
-    border: 1px solid var(--marble-vein);
+    border: 1px solid var(--border-color);
     position: relative;
     overflow: hidden;
   }
@@ -729,58 +852,51 @@ const styles = `
 
   .panel-title {
     font-family: 'Cinzel', serif;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     font-weight: 700;
     letter-spacing: 3px;
     text-align: center;
-    margin-bottom: 36px;
-  }
-
-  .input-group {
     margin-bottom: 28px;
   }
+
+  .input-group { margin-bottom: 20px; }
 
   .input-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
 
   .input-label {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    color: var(--text-medium);
+    color: var(--text-secondary);
     letter-spacing: 1px;
   }
 
   .balance-display {
-    font-size: 0.85rem;
-    color: var(--gold-dark);
+    font-size: 0.8rem;
+    color: var(--gold);
     cursor: pointer;
     transition: all 0.2s ease;
   }
 
-  .balance-display:hover {
-    color: var(--gold);
-    text-decoration: underline;
-  }
+  .balance-display:hover { text-decoration: underline; }
 
-  .input-container {
-    position: relative;
-  }
+  .input-container { position: relative; }
 
   .stake-input {
     width: 100%;
-    padding: 20px 120px 20px 24px;
+    padding: 16px 100px 16px 18px;
     font-family: 'Montserrat', sans-serif;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 600;
-    border: 2px solid var(--marble-vein);
-    border-radius: 16px;
-    background: #FFFFFF;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--bg-secondary);
     transition: all 0.3s ease;
-    color: var(--text-dark);
+    color: var(--text-primary);
   }
 
   .stake-input:focus {
@@ -789,58 +905,53 @@ const styles = `
     box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.1);
   }
 
-  .stake-input::placeholder {
-    color: var(--text-light);
-  }
+  .stake-input::placeholder { color: var(--text-muted); }
 
   .input-suffix {
     position: absolute;
-    right: 16px;
+    right: 12px;
     top: 50%;
     transform: translateY(-50%);
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
   }
 
   .token-badge {
-    padding: 6px 12px;
-    background: var(--marble-gray);
-    border-radius: 8px;
-    font-size: 0.8rem;
+    padding: 4px 8px;
+    background: var(--bg-primary);
+    border-radius: 6px;
+    font-size: 0.7rem;
     font-weight: 600;
-    color: var(--text-medium);
+    color: var(--text-muted);
   }
 
   .max-btn {
-    padding: 10px 18px;
+    padding: 6px 12px;
     font-family: 'Montserrat', sans-serif;
-    font-size: 0.75rem;
+    font-size: 0.65rem;
     font-weight: 700;
-    color: var(--charcoal);
+    color: #1A1A1A;
     background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
     letter-spacing: 1px;
   }
 
-  .max-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
-  }
+  .max-btn:hover { transform: scale(1.05); }
 
   .action-btn {
     width: 100%;
-    padding: 20px;
+    padding: 16px;
     font-family: 'Montserrat', sans-serif;
-    font-size: 1rem;
+    font-size: 0.9rem;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     border: none;
-    border-radius: 16px;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
@@ -858,25 +969,17 @@ const styles = `
     transition: left 0.5s ease;
   }
 
-  .action-btn:hover::before {
-    left: 100%;
-  }
+  .action-btn:hover::before { left: 100%; }
 
   .action-btn.primary {
     background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%);
-    color: var(--charcoal);
+    color: #1A1A1A;
     box-shadow: 0 8px 25px rgba(212, 175, 55, 0.35);
   }
 
   .action-btn.primary:hover:not(:disabled) {
     transform: translateY(-3px);
     box-shadow: 0 12px 35px rgba(212, 175, 55, 0.45);
-  }
-
-  .action-btn.secondary {
-    background: linear-gradient(135deg, var(--platinum-shine) 0%, var(--platinum) 100%);
-    color: var(--text-dark);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   }
 
   .action-btn:disabled {
@@ -886,188 +989,179 @@ const styles = `
   }
 
   .fee-breakdown {
-    margin-top: 28px;
-    padding: 24px;
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.05) 0%, rgba(212, 175, 55, 0.02) 100%);
+    margin-top: 20px;
+    padding: 18px;
+    background: ${isDark ? 'rgba(212, 175, 55, 0.08)' : 'rgba(212, 175, 55, 0.05)'};
     border: 1px solid rgba(212, 175, 55, 0.2);
-    border-radius: 16px;
+    border-radius: 12px;
   }
 
   .fee-title {
     font-family: 'Cinzel', serif;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 2px;
-    margin-bottom: 16px;
-    color: var(--gold-dark);
+    margin-bottom: 12px;
+    color: var(--gold);
   }
 
   .fee-row {
     display: flex;
     justify-content: space-between;
-    padding: 8px 0;
-    font-size: 0.85rem;
-    color: var(--text-medium);
+    padding: 5px 0;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
   }
 
-  .fee-row span:last-child {
-    font-weight: 600;
+  .fee-row span:last-child { font-weight: 600; }
+
+  /* ═══════════════════════════════════════════════════════════════
+                        VIDEO SECTION
+     ═══════════════════════════════════════════════════════════════ */
+
+  .video-showcase {
+    margin-top: 60px;
+    text-align: center;
+  }
+
+  .video-container {
+    max-width: 600px;
+    margin: 0 auto;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: var(--shadow-luxury);
+    border: 3px solid var(--gold);
+    animation: pulse-gold 3s infinite;
+  }
+
+  .video-container video {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .video-label {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    letter-spacing: 3px;
+    margin-bottom: 20px;
+    color: var(--gold);
+  }
+
+  /* Whitepaper Video Background */
+  .wp-video-section {
+    margin-top: 40px;
+    position: relative;
+    border-radius: 24px;
+    overflow: hidden;
+    min-height: 300px;
+  }
+
+  .wp-video-bg {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+    border-radius: 24px;
+  }
+
+  .wp-video-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, ${isDark ? 'rgba(13,13,13,0.9)' : 'rgba(255,255,255,0.85)'} 0%, transparent 100%);
+    display: flex;
+    align-items: flex-end;
+    padding: 40px;
+    border-radius: 24px;
+  }
+
+  .wp-video-text {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    letter-spacing: 4px;
   }
 
   /* ═══════════════════════════════════════════════════════════════
-                        POSITION CARD
+                        MODAL / POPUP
      ═══════════════════════════════════════════════════════════════ */
 
-  .position-card {
-    max-width: 800px;
-    margin: 0 auto 60px;
-    background: linear-gradient(180deg, #FFFFFF 0%, var(--marble-gray) 100%);
-    border-radius: 32px;
-    padding: 48px;
-    border: 3px solid var(--gold);
-    box-shadow: var(--glow-gold);
-    position: relative;
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: backdrop-in 0.3s ease;
+  }
+
+  .modal-content {
+    background: var(--bg-card);
+    border-radius: 28px;
+    padding: 0;
+    max-width: 500px;
+    width: 90%;
     overflow: hidden;
+    box-shadow: 0 50px 100px rgba(0, 0, 0, 0.5);
+    border: 3px solid var(--gold);
+    animation: modal-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
   }
 
-  .position-card::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -50%;
+  .modal-video {
     width: 100%;
-    height: 100%;
-    background: radial-gradient(circle, rgba(212, 175, 55, 0.1) 0%, transparent 70%);
-    pointer-events: none;
+    height: auto;
+    display: block;
   }
 
-  .position-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 36px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--marble-vein);
-  }
-
-  .position-title {
-    font-family: 'Cinzel', serif;
-    font-size: 1.4rem;
-    font-weight: 700;
-    letter-spacing: 3px;
-  }
-
-  .position-tier-badge {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 24px;
-    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
-    border-radius: 50px;
-    font-weight: 700;
-    font-size: 0.9rem;
-    color: var(--charcoal);
-  }
-
-  .position-stats {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
-    margin-bottom: 36px;
-  }
-
-  @media (max-width: 768px) {
-    .position-stats { grid-template-columns: repeat(2, 1fr); }
-  }
-
-  .position-stat {
+  .modal-body {
+    padding: 30px;
     text-align: center;
-    padding: 24px;
-    background: rgba(212, 175, 55, 0.05);
-    border-radius: 16px;
+  }
+
+  .modal-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    font-weight: 800;
+    letter-spacing: 3px;
+    margin-bottom: 12px;
+  }
+
+  .modal-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+
+  .modal-close-btn {
+    width: 100%;
+    padding: 16px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+    color: #1A1A1A;
     transition: all 0.3s ease;
   }
 
-  .position-stat:hover {
-    background: rgba(212, 175, 55, 0.1);
-    transform: translateY(-3px);
-  }
-
-  .position-stat-value {
-    font-family: 'Cinzel', serif;
-    font-size: 1.8rem;
-    font-weight: 800;
-    margin-bottom: 8px;
-  }
-
-  .position-stat-label {
-    font-size: 0.7rem;
-    color: var(--text-light);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-  }
-
-  .progress-container {
-    margin-bottom: 36px;
-  }
-
-  .progress-header {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    font-size: 0.9rem;
-  }
-
-  .progress-bar {
-    height: 12px;
-    background: var(--marble-vein);
-    border-radius: 6px;
-    overflow: hidden;
-    position: relative;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: linear-gradient(90deg, var(--gold-light), var(--gold), var(--gold-dark));
-    border-radius: 6px;
-    transition: width 1s ease;
-    position: relative;
-  }
-
-  .progress-fill::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-    animation: shimmer 2s linear infinite;
-  }
-
-  .position-actions {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-  }
-
-  @media (max-width: 600px) {
-    .position-actions { grid-template-columns: 1fr; }
-  }
-
-  .action-btn.danger {
-    background: linear-gradient(135deg, #FFCDD2 0%, #EF9A9A 100%);
-    color: #C62828;
+  .modal-close-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.4);
   }
 
   /* ═══════════════════════════════════════════════════════════════
-                        BURN TRACKER
+                        BURN STATS SECTION
      ═══════════════════════════════════════════════════════════════ */
 
   .burn-section {
-    background: linear-gradient(180deg, #1A0A00 0%, #0D0505 100%);
-    border-radius: 32px;
-    padding: 60px;
+    background: ${isDark ? 'linear-gradient(180deg, #1A0808 0%, #0D0505 100%)' : 'linear-gradient(180deg, #2D1B10 0%, #1A0A00 100%)'};
+    border-radius: 24px;
+    padding: 45px;
     color: #FFFFFF;
     position: relative;
     overflow: hidden;
@@ -1076,10 +1170,7 @@ const styles = `
   .burn-section::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: 
       radial-gradient(ellipse at top left, rgba(255, 87, 34, 0.15) 0%, transparent 50%),
       radial-gradient(ellipse at bottom right, rgba(255, 152, 0, 0.1) 0%, transparent 50%);
@@ -1089,51 +1180,73 @@ const styles = `
   .burn-header {
     display: flex;
     align-items: center;
-    gap: 20px;
-    margin-bottom: 48px;
+    gap: 18px;
+    margin-bottom: 35px;
     position: relative;
+    flex-wrap: wrap;
   }
 
   .burn-icon {
-    font-size: 4rem;
+    font-size: 3rem;
     animation: fire-flicker 1s ease-in-out infinite;
   }
 
-  .burn-title {
+  .burn-header-text h2 {
     font-family: 'Cinzel', serif;
-    font-size: 2rem;
+    font-size: 1.6rem;
     font-weight: 800;
     letter-spacing: 4px;
     background: linear-gradient(135deg, #FF9800 0%, #FF5722 50%, #F44336 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    margin-bottom: 4px;
   }
 
-  .burn-subtitle {
-    font-size: 0.85rem;
+  .burn-header-text p {
+    font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.6);
     letter-spacing: 2px;
-    margin-top: 4px;
   }
 
-  .burn-stats-grid {
+  .burn-links {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+  }
+
+  .burn-link-btn {
+    padding: 8px 16px;
+    background: rgba(255, 152, 0, 0.2);
+    border: 1px solid rgba(255, 152, 0, 0.4);
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #FF9800;
+    text-decoration: none;
+    transition: all 0.3s ease;
+  }
+
+  .burn-link-btn:hover {
+    background: rgba(255, 152, 0, 0.3);
+    transform: translateY(-2px);
+  }
+
+  .burn-main-stats {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 24px;
-    margin-bottom: 48px;
-    position: relative;
+    gap: 16px;
+    margin-bottom: 35px;
   }
 
-  @media (max-width: 900px) {
-    .burn-stats-grid { grid-template-columns: repeat(2, 1fr); }
-  }
+  @media (max-width: 1000px) { .burn-main-stats { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 600px) { .burn-main-stats { grid-template-columns: 1fr; } }
 
   .burn-stat-card {
     background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 152, 0, 0.3);
-    border-radius: 20px;
-    padding: 28px;
+    border: 1px solid rgba(255, 152, 0, 0.25);
+    border-radius: 16px;
+    padding: 22px;
     text-align: center;
     transition: all 0.3s ease;
   }
@@ -1141,118 +1254,250 @@ const styles = `
   .burn-stat-card:hover {
     background: rgba(255, 152, 0, 0.1);
     border-color: #FF9800;
-    transform: translateY(-5px);
+    transform: translateY(-4px);
   }
+
+  .burn-stat-emoji { font-size: 1.8rem; margin-bottom: 10px; }
 
   .burn-stat-value {
     font-family: 'Cinzel', serif;
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: 800;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
     background: linear-gradient(135deg, #FFE082 0%, #FF9800 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
+  .burn-stat-subvalue {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 6px;
+  }
+
   .burn-stat-label {
-    font-size: 0.7rem;
+    font-size: 0.6rem;
     color: rgba(255, 255, 255, 0.6);
     text-transform: uppercase;
     letter-spacing: 2px;
   }
 
-  .burn-pools-title {
+  .burn-progress-section { margin-bottom: 35px; position: relative; }
+
+  .burn-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .burn-progress-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .burn-progress-percent {
     font-family: 'Cinzel', serif;
     font-size: 1.2rem;
+    font-weight: 800;
+    color: #FF9800;
+  }
+
+  .burn-progress-bar {
+    height: 24px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .burn-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #FF5722, #FF9800, #FFC107);
+    border-radius: 12px;
+    transition: width 1s ease;
+    position: relative;
+  }
+
+  .burn-progress-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 2s linear infinite;
+  }
+
+  .burn-progress-blocks {
+    display: flex;
+    gap: 2px;
+    margin-top: 8px;
+  }
+
+  .burn-block {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 152, 0, 0.3);
+    border-radius: 3px;
+  }
+
+  .burn-block.filled { background: #FF9800; }
+
+  .dead-wallet-section, .lp-burn-section, .lp-urmom-section { margin-bottom: 35px; position: relative; }
+
+  .dead-wallet-title, .lp-burn-title, .lp-urmom-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
     letter-spacing: 3px;
-    margin-bottom: 24px;
+    margin-bottom: 18px;
     color: rgba(255, 255, 255, 0.8);
-    position: relative;
   }
 
-  .burn-pools-grid {
+  .dead-wallet-grid { display: grid; gap: 10px; }
+
+  .dead-wallet-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    font-family: monospace;
+    font-size: 0.8rem;
+  }
+
+  .dead-wallet-address { color: rgba(255, 255, 255, 0.6); }
+  .dead-wallet-amount { color: #FF9800; font-weight: 600; }
+  .dead-wallet-amount.zero { color: rgba(255, 255, 255, 0.3); }
+
+  .lp-burn-grid, .lp-urmom-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 48px;
-    position: relative;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
   }
 
-  @media (max-width: 900px) {
-    .burn-pools-grid { grid-template-columns: repeat(2, 1fr); }
-  }
+  @media (max-width: 700px) { .lp-burn-grid, .lp-urmom-grid { grid-template-columns: 1fr; } }
 
-  @media (max-width: 600px) {
-    .burn-pools-grid { grid-template-columns: 1fr; }
-  }
-
-  .burn-pool-card {
+  .lp-burn-item {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 152, 0, 0.2);
-    border-radius: 16px;
-    padding: 20px;
+    border-radius: 12px;
+    padding: 16px;
     transition: all 0.3s ease;
-    cursor: pointer;
   }
 
-  .burn-pool-card:hover {
-    background: rgba(255, 152, 0, 0.1);
+  .lp-burn-item:hover {
+    background: rgba(255, 152, 0, 0.08);
     border-color: #FF9800;
   }
 
-  .burn-pool-name {
-    font-weight: 600;
-    margin-bottom: 8px;
-    color: #FFFFFF;
+  .lp-burn-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
   }
 
-  .burn-pool-value {
+  .lp-burn-name { font-weight: 600; font-size: 0.85rem; }
+  .lp-burn-percent { font-family: 'Cinzel', serif; font-weight: 700; color: #FF9800; }
+
+  .lp-burn-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .lp-burn-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #FF5722, #FF9800);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .lp-urmom-grid { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 900px) { .lp-urmom-grid { grid-template-columns: repeat(2, 1fr); } }
+
+  .lp-urmom-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 152, 0, 0.2);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .lp-urmom-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--card-color);
+  }
+
+  .lp-urmom-card:hover {
+    background: rgba(255, 152, 0, 0.08);
+    transform: translateY(-3px);
+  }
+
+  .lp-urmom-pool {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .lp-urmom-tokens {
     font-family: 'Cinzel', serif;
     font-size: 1.3rem;
     font-weight: 700;
-    color: #FF9800;
-    margin-bottom: 8px;
+    color: #FFFFFF;
+    margin-bottom: 4px;
   }
 
-  .burn-pool-address {
-    font-size: 0.7rem;
-    color: rgba(255, 255, 255, 0.4);
-    font-family: monospace;
-  }
+  .lp-urmom-usd { font-size: 0.75rem; color: #FF9800; }
 
   .burn-address-box {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 152, 0, 0.3);
-    border-radius: 16px;
-    padding: 20px;
+    border-radius: 14px;
+    padding: 18px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 14px;
     position: relative;
   }
 
+  .burn-address-info { display: flex; flex-direction: column; gap: 4px; }
+
   .burn-address-label {
-    font-size: 0.8rem;
-    color: rgba(255, 255, 255, 0.6);
-    margin-bottom: 4px;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
 
   .burn-address-value {
     font-family: monospace;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
     color: #FF9800;
   }
 
   .burn-view-btn {
-    padding: 12px 24px;
+    padding: 10px 20px;
     background: linear-gradient(135deg, #FF9800 0%, #FF5722 100%);
     border: none;
     border-radius: 30px;
     font-family: 'Montserrat', sans-serif;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     font-weight: 700;
     color: #FFFFFF;
     cursor: pointer;
@@ -1262,7 +1507,7 @@ const styles = `
     text-decoration: none;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
   }
 
   .burn-view-btn:hover {
@@ -1271,13 +1516,13 @@ const styles = `
   }
 
   /* ═══════════════════════════════════════════════════════════════
-                        DAO VOTING
+                        DAO VOTING + OTHER SECTIONS
      ═══════════════════════════════════════════════════════════════ */
 
   .voting-section {
-    background: linear-gradient(180deg, #0D1421 0%, #0A0E14 100%);
-    border-radius: 32px;
-    padding: 60px;
+    background: ${isDark ? 'linear-gradient(180deg, #0A1015 0%, #050A0D 100%)' : 'linear-gradient(180deg, #0D1421 0%, #0A0E14 100%)'};
+    border-radius: 24px;
+    padding: 45px;
     color: #FFFFFF;
     position: relative;
     overflow: hidden;
@@ -1286,10 +1531,7 @@ const styles = `
   .voting-section::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    inset: 0;
     background: 
       radial-gradient(ellipse at top, rgba(0, 188, 212, 0.1) 0%, transparent 50%),
       radial-gradient(ellipse at bottom right, rgba(212, 175, 55, 0.05) 0%, transparent 50%);
@@ -1299,20 +1541,20 @@ const styles = `
   .voting-header {
     display: flex;
     align-items: center;
-    gap: 20px;
-    margin-bottom: 48px;
+    gap: 18px;
+    margin-bottom: 35px;
     position: relative;
   }
 
   .voting-icon {
-    font-size: 4rem;
+    font-size: 3rem;
     animation: glow-pulse 2s ease-in-out infinite;
     color: var(--diamond);
   }
 
-  .voting-title {
+  .voting-header-text h2 {
     font-family: 'Cinzel', serif;
-    font-size: 2rem;
+    font-size: 1.6rem;
     font-weight: 800;
     letter-spacing: 4px;
     background: linear-gradient(135deg, var(--diamond) 0%, var(--diamond-dark) 100%);
@@ -1321,8 +1563,8 @@ const styles = `
     background-clip: text;
   }
 
-  .voting-subtitle {
-    font-size: 0.85rem;
+  .voting-header-text p {
+    font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.6);
     letter-spacing: 2px;
     margin-top: 4px;
@@ -1331,71 +1573,56 @@ const styles = `
   .voting-eligibility {
     background: rgba(0, 188, 212, 0.1);
     border: 1px solid rgba(0, 188, 212, 0.3);
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 48px;
-    position: relative;
+    border-radius: 12px;
+    padding: 18px;
+    margin-bottom: 35px;
   }
 
   .eligibility-title {
     font-family: 'Cinzel', serif;
-    font-size: 1rem;
+    font-size: 0.85rem;
     letter-spacing: 2px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     color: var(--diamond);
   }
 
-  .eligibility-items {
-    display: flex;
-    gap: 32px;
-    flex-wrap: wrap;
-  }
+  .eligibility-items { display: flex; gap: 24px; flex-wrap: wrap; }
 
   .eligibility-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    font-size: 0.9rem;
+    gap: 8px;
+    font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.8);
   }
 
   .eligibility-check {
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
+    font-size: 0.7rem;
   }
 
-  .eligibility-check.active {
-    background: var(--diamond-dark);
-    color: #FFFFFF;
-  }
-
-  .eligibility-check.inactive {
-    background: rgba(255, 255, 255, 0.1);
-    color: rgba(255, 255, 255, 0.4);
-  }
+  .eligibility-check.active { background: var(--diamond-dark); color: #FFFFFF; }
+  .eligibility-check.inactive { background: rgba(255, 255, 255, 0.1); color: rgba(255, 255, 255, 0.4); }
 
   .voting-options-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 20px;
-    margin-bottom: 48px;
-    position: relative;
+    gap: 14px;
+    margin-bottom: 35px;
   }
 
-  @media (max-width: 768px) {
-    .voting-options-grid { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 768px) { .voting-options-grid { grid-template-columns: 1fr; } }
 
   .voting-option {
     background: rgba(255, 255, 255, 0.03);
     border: 2px solid rgba(0, 188, 212, 0.2);
-    border-radius: 20px;
-    padding: 28px;
+    border-radius: 16px;
+    padding: 22px;
     cursor: pointer;
     transition: all 0.3s ease;
   }
@@ -1411,16 +1638,11 @@ const styles = `
     box-shadow: 0 0 30px rgba(0, 188, 212, 0.3);
   }
 
-  .voting-option-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 12px;
-  }
+  .voting-option-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
 
   .voting-option-letter {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: linear-gradient(135deg, var(--diamond) 0%, var(--diamond-dark) 100%);
     display: flex;
@@ -1428,65 +1650,60 @@ const styles = `
     justify-content: center;
     font-family: 'Cinzel', serif;
     font-weight: 800;
-    font-size: 1.2rem;
-    color: var(--charcoal);
+    font-size: 1rem;
+    color: #1A1A1A;
   }
 
   .voting-option-name {
     font-family: 'Cinzel', serif;
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 700;
     letter-spacing: 2px;
     color: #FFFFFF;
   }
 
   .voting-option-desc {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.6);
-    line-height: 1.6;
+    line-height: 1.5;
   }
 
   .voting-option-votes {
-    margin-top: 16px;
-    padding-top: 16px;
+    margin-top: 12px;
+    padding-top: 12px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   .votes-bar {
-    height: 8px;
+    height: 5px;
     background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
+    border-radius: 3px;
     overflow: hidden;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
   }
 
   .votes-fill {
     height: 100%;
     background: linear-gradient(90deg, var(--diamond), var(--diamond-dark));
-    border-radius: 4px;
-    transition: width 0.5s ease;
+    border-radius: 3px;
   }
 
-  .votes-count {
-    font-size: 0.8rem;
-    color: var(--diamond);
-  }
+  .votes-count { font-size: 0.7rem; color: var(--diamond); }
 
   .vote-btn {
     width: 100%;
-    padding: 18px;
+    padding: 14px;
     background: linear-gradient(135deg, var(--diamond) 0%, var(--diamond-dark) 100%);
     border: none;
-    border-radius: 16px;
+    border-radius: 12px;
     font-family: 'Montserrat', sans-serif;
-    font-size: 1rem;
+    font-size: 0.85rem;
     font-weight: 700;
-    color: var(--charcoal);
+    color: #1A1A1A;
     cursor: pointer;
     transition: all 0.3s ease;
     text-transform: uppercase;
-    letter-spacing: 3px;
-    position: relative;
+    letter-spacing: 2px;
   }
 
   .vote-btn:hover:not(:disabled) {
@@ -1494,82 +1711,224 @@ const styles = `
     box-shadow: var(--glow-diamond);
   }
 
-  .vote-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+  .vote-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* Links & Whitepaper */
+  .links-section { text-align: center; }
+
+  .links-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    max-width: 700px;
+    margin: 0 auto 40px;
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-                        FOOTER
-     ═══════════════════════════════════════════════════════════════ */
+  @media (max-width: 600px) { .links-grid { grid-template-columns: 1fr; } }
 
+  .link-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 24px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .link-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-luxury);
+    border-color: var(--gold);
+  }
+
+  .link-icon { font-size: 2.2rem; }
+  .link-info { text-align: left; }
+
+  .link-name {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: 1px;
+    margin-bottom: 3px;
+  }
+
+  .link-url { font-size: 0.7rem; color: var(--gold); }
+
+  .contracts-section {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 28px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  .contracts-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .contract-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .contract-row:last-child { border-bottom: none; }
+
+  .contract-label {
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+  }
+
+  .contract-address {
+    font-family: monospace;
+    font-size: 0.75rem;
+    color: var(--gold);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .contract-address:hover { text-decoration: underline; }
+
+  /* Whitepaper */
+  .whitepaper-section { max-width: 800px; margin: 0 auto; }
+
+  .wp-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 30px;
+    margin-bottom: 20px;
+  }
+
+  .wp-card-title {
+    font-family: 'Cinzel', serif;
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .wp-card-content {
+    font-size: 0.9rem;
+    line-height: 1.8;
+    color: var(--text-secondary);
+  }
+
+  .wp-card-content p { margin-bottom: 12px; }
+  .wp-card-content ul { margin: 12px 0; padding-left: 22px; }
+  .wp-card-content li { margin-bottom: 6px; }
+
+  .wp-highlight {
+    background: ${isDark ? 'rgba(212, 175, 55, 0.12)' : 'rgba(212, 175, 55, 0.08)'};
+    border-left: 4px solid var(--gold);
+    padding: 14px 18px;
+    border-radius: 0 10px 10px 0;
+    margin: 14px 0;
+  }
+
+  .tokenomics-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+  }
+
+  .tokenomics-table th,
+  .tokenomics-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.85rem;
+  }
+
+  .tokenomics-table th {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    color: var(--gold);
+  }
+
+  /* Footer */
   .footer {
     text-align: center;
-    padding: 60px 40px;
-    background: linear-gradient(180deg, var(--marble-gray) 0%, var(--marble-vein) 100%);
-    border-top: 1px solid var(--marble-vein);
+    padding: 45px 40px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-color);
   }
 
   .footer-logo {
     font-family: 'Cinzel', serif;
-    font-size: 2rem;
+    font-size: 1.6rem;
     font-weight: 800;
     letter-spacing: 4px;
-    margin-bottom: 24px;
+    margin-bottom: 18px;
   }
 
   .footer-links {
     display: flex;
     justify-content: center;
-    gap: 40px;
-    margin-bottom: 32px;
+    gap: 28px;
+    margin-bottom: 24px;
     flex-wrap: wrap;
   }
 
   .footer-link {
-    color: var(--text-medium);
+    color: var(--text-secondary);
     text-decoration: none;
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     font-weight: 500;
     transition: all 0.2s ease;
     letter-spacing: 1px;
   }
 
-  .footer-link:hover {
-    color: var(--gold);
-  }
+  .footer-link:hover { color: var(--gold); }
 
   .footer-divider {
-    width: 200px;
+    width: 160px;
     height: 1px;
     background: linear-gradient(90deg, transparent, var(--gold), transparent);
-    margin: 0 auto 24px;
+    margin: 0 auto 18px;
   }
 
   .footer-text {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 0.9rem;
-    color: var(--text-light);
+    font-size: 0.8rem;
+    color: var(--text-muted);
     letter-spacing: 2px;
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-                        TOAST & UTILITIES
-     ═══════════════════════════════════════════════════════════════ */
-
+  /* Toast & Utilities */
   .toast {
     position: fixed;
-    bottom: 30px;
-    right: 30px;
-    padding: 18px 28px;
-    border-radius: 16px;
-    font-size: 0.9rem;
+    bottom: 24px;
+    right: 24px;
+    padding: 14px 22px;
+    border-radius: 12px;
+    font-size: 0.8rem;
     font-weight: 500;
-    animation: slide-in-right 0.4s ease;
+    animation: slide-in-up 0.4s ease;
     z-index: 10000;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     box-shadow: var(--shadow-luxury);
   }
 
@@ -1593,8 +1952,8 @@ const styles = `
 
   .spinner {
     display: inline-block;
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
     border: 2px solid transparent;
     border-top-color: currentColor;
     border-radius: 50%;
@@ -1603,23 +1962,23 @@ const styles = `
 
   .connect-prompt {
     text-align: center;
-    padding: 80px 40px;
-    background: rgba(212, 175, 55, 0.03);
-    border-radius: 32px;
+    padding: 60px 40px;
+    background: ${isDark ? 'rgba(212, 175, 55, 0.05)' : 'rgba(212, 175, 55, 0.03)'};
+    border-radius: 24px;
     border: 2px dashed var(--gold);
   }
 
   .connect-prompt-icon {
-    font-size: 4rem;
-    margin-bottom: 24px;
+    font-size: 3rem;
+    margin-bottom: 18px;
     animation: float 3s ease-in-out infinite;
   }
 
   .connect-prompt-text {
     font-family: 'Cormorant Garamond', serif;
-    font-size: 1.4rem;
-    color: var(--text-medium);
-    margin-bottom: 32px;
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
     letter-spacing: 1px;
   }
 `;
@@ -1630,34 +1989,147 @@ const styles = `
 
 const formatNumber = (num, decimals = 2) => {
   if (!num || isNaN(num)) return '0';
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+  if (num >= 1000000000) return (num / 1000000000).toFixed(2) + 'B';
+  if (num >= 1000000) return (num / 1000000).toFixed(2) + 'M';
   if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: decimals }).format(num);
 };
 
+const formatFullNumber = (num) => new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(num);
 const formatAddress = (addr) => addr ? `${addr.slice(0, 6)}...${addr.slice(-4)}` : '';
+const formatUSD = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(value);
+const formatPLS = (value) => formatNumber(value) + ' PLS';
 
-const formatTime = (seconds) => {
-  if (!seconds || seconds <= 0) return 'Ready';
-  const d = Math.floor(seconds / 86400);
-  const h = Math.floor((seconds % 86400) / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  if (d > 0) return `${d}d ${h}h`;
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
+// ═══════════════════════════════════════════════════════════════
+//                    COMPONENTS
+// ═══════════════════════════════════════════════════════════════
+
+// Intro Video Overlay (plays on site entry)
+const IntroVideoOverlay = ({ onComplete, isDark }) => {
+  const [hiding, setHiding] = React.useState(false);
+  
+  const handleSkip = () => {
+    setHiding(true);
+    setTimeout(onComplete, 500);
+  };
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.97)',
+      zIndex: 99999,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      animation: hiding ? 'modal-out 0.5s ease forwards' : 'backdrop-in 0.5s ease',
+    }}>
+      <div style={{
+        position: 'relative',
+        maxWidth: '850px',
+        width: '92%',
+        borderRadius: '24px',
+        overflow: 'hidden',
+        border: '3px solid var(--gold)',
+        boxShadow: '0 0 80px rgba(212, 175, 55, 0.6), 0 0 120px rgba(212, 175, 55, 0.3)',
+      }}>
+        <video
+          autoPlay
+          muted
+          playsInline
+          onEnded={handleSkip}
+          style={{ width: '100%', display: 'block' }}
+        >
+          <source src={VIDEOS.popup} type="video/quicktime" />
+          <source src={VIDEOS.popup.replace('.mov', '.mp4')} type="video/mp4" />
+        </video>
+        <button
+          onClick={handleSkip}
+          style={{
+            position: 'absolute',
+            bottom: '24px',
+            right: '24px',
+            background: 'linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%)',
+            border: 'none',
+            color: '#1A1A1A',
+            padding: '14px 32px',
+            borderRadius: '50px',
+            fontFamily: 'Cinzel, serif',
+            fontWeight: '700',
+            fontSize: '0.85rem',
+            cursor: 'pointer',
+            transition: 'all 0.3s ease',
+            letterSpacing: '3px',
+            textTransform: 'uppercase',
+            boxShadow: '0 4px 20px rgba(212, 175, 55, 0.4)',
+          }}
+          onMouseEnter={(e) => { e.target.style.transform = 'translateY(-2px)'; e.target.style.boxShadow = '0 8px 30px rgba(212, 175, 55, 0.6)'; }}
+          onMouseLeave={(e) => { e.target.style.transform = 'translateY(0)'; e.target.style.boxShadow = '0 4px 20px rgba(212, 175, 55, 0.4)'; }}
+        >
+          Enter Site →
+        </button>
+      </div>
+    </div>
+  );
 };
 
-// ═══════════════════════════════════════════════════════════════
-//                    PARTICLES COMPONENT
-// ═══════════════════════════════════════════════════════════════
+// Stake Video Modal (plays when staking)
+const StakeVideoModal = ({ onComplete, tierName, isDark }) => {
+  React.useEffect(() => {
+    const timer = setTimeout(onComplete, 5000);
+    return () => clearTimeout(timer);
+  }, [onComplete]);
+
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.92)',
+      zIndex: 99998,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      animation: 'backdrop-in 0.3s ease',
+    }} onClick={onComplete}>
+      <div style={{
+        position: 'relative',
+        maxWidth: '600px',
+        width: '90%',
+        borderRadius: '20px',
+        overflow: 'hidden',
+        border: '2px solid var(--diamond)',
+        boxShadow: 'var(--glow-diamond)',
+      }}>
+        <video autoPlay muted playsInline style={{ width: '100%', display: 'block' }}>
+          <source src={VIDEOS.stake} type="video/quicktime" />
+          <source src={VIDEOS.stake.replace('.mov', '.mp4')} type="video/mp4" />
+        </video>
+        <div style={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: 'linear-gradient(transparent, rgba(0,0,0,0.95))',
+          padding: '40px 24px 24px',
+          textAlign: 'center',
+        }}>
+          <h3 style={{ fontFamily: 'Cinzel, serif', color: '#4CAF50', fontSize: '1.3rem', marginBottom: '6px', letterSpacing: '3px' }}>
+            🎉 STAKING {tierName}!
+          </h3>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>Diamond hands activated 💎</p>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Particles = () => {
   const particles = useMemo(() => 
-    Array.from({ length: 20 }, (_, i) => ({
+    Array.from({ length: 12 }, (_, i) => ({
       id: i,
       left: Math.random() * 100,
       delay: Math.random() * 20,
-      duration: 15 + Math.random() * 20,
+      duration: 18 + Math.random() * 20,
       size: 2 + Math.random() * 4,
     })), []
   );
@@ -1665,18 +2137,59 @@ const Particles = () => {
   return (
     <div className="particles-container">
       {particles.map(p => (
-        <div
-          key={p.id}
-          className="particle"
-          style={{
-            left: `${p.left}%`,
-            width: p.size,
-            height: p.size,
-            animationDelay: `${p.delay}s`,
-            animationDuration: `${p.duration}s`,
-          }}
-        />
+        <div key={p.id} className="particle" style={{
+          left: `${p.left}%`,
+          width: p.size,
+          height: p.size,
+          animationDelay: `${p.delay}s`,
+          animationDuration: `${p.duration}s`,
+        }} />
       ))}
+    </div>
+  );
+};
+
+const MarbleBackground = () => (
+  <>
+    <div className="marble-bg" />
+    <div className="marble-veins">
+      <div className="vein vein-1" />
+      <div className="vein vein-2" />
+      <div className="vein vein-3" />
+      <div className="vein vein-4" />
+      <div className="vein vein-5" />
+    </div>
+  </>
+);
+
+// Stake Confirmation Modal
+const StakeModal = ({ isOpen, onClose, type, amount, tier }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-content" onClick={e => e.stopPropagation()}>
+        {VIDEOS_ENABLED && (
+        <video className="modal-video" autoPlay loop muted playsInline>
+          <source src={VIDEOS.popup} type="video/quicktime" />
+          <source src={VIDEOS.popup.replace('.mov', '.mp4')} type="video/mp4" />
+        </video>
+        )}
+        <div className="modal-body">
+          <h3 className="modal-title gold-text">
+            {type === 'start' ? '🎉 STAKE INITIATED!' : '✅ STAKE COMPLETE!'}
+          </h3>
+          <p className="modal-subtitle">
+            {type === 'start' 
+              ? `Staking ${amount} tokens in ${tier} tier...`
+              : `Successfully staked ${amount} tokens!`
+            }
+          </p>
+          <button className="modal-close-btn" onClick={onClose}>
+            {type === 'start' ? 'Confirm' : 'Close'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -1686,48 +2199,266 @@ const Particles = () => {
 // ═══════════════════════════════════════════════════════════════
 
 export default function App() {
-  // State
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('dtgc-theme') === 'dark';
+    }
+    return false;
+  });
+
+  // Intro video overlay (shows once per session)
+  const [showIntro, setShowIntro] = useState(() => {
+    if (typeof window !== 'undefined' && VIDEOS_ENABLED) {
+      const seen = sessionStorage.getItem('dtgc-intro-seen');
+      return !seen;
+    }
+    return false;
+  });
+  
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('dtgc-intro-seen', 'true');
+    }
+  };
+
+  // Stake video modal
+  const [showStakeVideo, setShowStakeVideo] = useState(false);
+  const [stakingTierName, setStakingTierName] = useState('');
+
   const [provider, setProvider] = useState(null);
   const [signer, setSigner] = useState(null);
   const [account, setAccount] = useState(null);
   const [activeTab, setActiveTab] = useState('stake');
   const [scrolled, setScrolled] = useState(false);
 
+  // Testnet balances (stored in localStorage for persistence)
+  const [testnetBalances, setTestnetBalances] = useState(() => {
+    if (TESTNET_MODE && typeof window !== 'undefined') {
+      const saved = localStorage.getItem('dtgc-testnet-balances');
+      if (saved) return JSON.parse(saved);
+    }
+    return null;
+  });
+
   const [dtgcBalance, setDtgcBalance] = useState('0');
   const [lpBalance, setLpBalance] = useState('0');
+  const [plsBalance, setPlsBalance] = useState('0');
+  const [urmomBalance, setUrmomBalance] = useState('0');
   const [selectedTier, setSelectedTier] = useState(null);
   const [stakeAmount, setStakeAmount] = useState('');
   const [isLP, setIsLP] = useState(false);
 
   const [position, setPosition] = useState(null);
   const [lpPosition, setLpPosition] = useState(null);
-  const [rewards, setRewards] = useState({ base: '0', feeShare: '0', bonus: '0' });
+  const [stakedPositions, setStakedPositions] = useState([]);
   const [contractStats, setContractStats] = useState({ totalStaked: '0', stakers: '0' });
 
   const [canVote, setCanVote] = useState(false);
   const [selectedVote, setSelectedVote] = useState(null);
-  const [proposal, setProposal] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
 
-  // Burn calculations
-  const totalUrmomBurned = useMemo(() => 
-    BURN_BREAKDOWN.reduce((sum, item) => sum + item.amount, 0), []
-  );
-  const totalLPBurned = useMemo(() => 
-    BURNED_LPS.reduce((sum, lp) => sum + lp.plpBurned, 0), []
-  );
+  // Modal state
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalType, setModalType] = useState('start');
 
-  // Scroll handler
+  // Live prices state (fetched from DexScreener)
+  const [livePrices, setLivePrices] = useState({
+    urmom: BURN_STATS.urmomPrice,
+    dtgc: BURN_STATS.dtgcPrice,
+    lastUpdated: null,
+    loading: true,
+    error: null,
+  });
+
+  // Toast notification helper - defined early so all callbacks can use it
+  const showToast = (message, type) => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // Fetch live prices from DexScreener
+  const fetchLivePrices = useCallback(async () => {
+    setLivePrices(prev => ({ ...prev, loading: true, error: null }));
+    
+    try {
+      // URMOM price
+      const urmomRes = await fetch('https://api.dexscreener.com/latest/dex/pairs/pulsechain/0x0548656e272fec9534e180d3174cfc57ab6e10c0');
+      const urmomData = await urmomRes.json();
+      
+      // DTGC price
+      const dtgcRes = await fetch('https://api.dexscreener.com/latest/dex/pairs/pulsechain/0x0b0a8a0b7546ff180328aa155d2405882c7ac8c7');
+      const dtgcData = await dtgcRes.json();
+      
+      // DexScreener returns { pairs: [...] } or { pair: {...} }
+      const urmomPrice = parseFloat(
+        urmomData?.pair?.priceUsd || 
+        urmomData?.pairs?.[0]?.priceUsd || 
+        BURN_STATS.urmomPrice
+      );
+      const dtgcPrice = parseFloat(
+        dtgcData?.pair?.priceUsd || 
+        dtgcData?.pairs?.[0]?.priceUsd || 
+        BURN_STATS.dtgcPrice
+      );
+      
+      if (isNaN(urmomPrice) || isNaN(dtgcPrice)) {
+        throw new Error('Invalid price data');
+      }
+      
+      setLivePrices({
+        urmom: urmomPrice,
+        dtgc: dtgcPrice,
+        lastUpdated: new Date(),
+        loading: false,
+        error: null,
+      });
+      
+      console.log('📊 Live prices updated:', { urmom: urmomPrice, dtgc: dtgcPrice });
+      // Toast only shown on manual refresh, not auto-refresh
+    } catch (err) {
+      console.error('Failed to fetch live prices:', err);
+      setLivePrices(prev => ({ 
+        ...prev, 
+        loading: false, 
+        error: 'Failed to fetch prices - using cached values'
+      }));
+      // Toast shown only on manual refresh to avoid hoisting issues
+    }
+  }, []);
+
+  // Fetch prices on mount and every 60 seconds
+  useEffect(() => {
+    fetchLivePrices();
+    const interval = setInterval(fetchLivePrices, 60000); // Refresh every 60s
+    return () => clearInterval(interval);
+  }, [fetchLivePrices]);
+
+  // Manual refresh with toast notification
+  const manualRefreshPrices = async () => {
+    setLivePrices(prev => ({ ...prev, loading: true }));
+    try {
+      const [urmomRes, dtgcRes] = await Promise.all([
+        fetch('https://api.dexscreener.com/latest/dex/pairs/pulsechain/0x0548656e272fec9534e180d3174cfc57ab6e10c0'),
+        fetch('https://api.dexscreener.com/latest/dex/pairs/pulsechain/0x0b0a8a0b7546ff180328aa155d2405882c7ac8c7'),
+      ]);
+      
+      const urmomData = await urmomRes.json();
+      const dtgcData = await dtgcRes.json();
+      
+      const urmomPrice = parseFloat(urmomData?.pair?.priceUsd || urmomData?.pairs?.[0]?.priceUsd || BURN_STATS.urmomPrice);
+      const dtgcPrice = parseFloat(dtgcData?.pair?.priceUsd || dtgcData?.pairs?.[0]?.priceUsd || BURN_STATS.dtgcPrice);
+      
+      setLivePrices({
+        urmom: urmomPrice,
+        dtgc: dtgcPrice,
+        lastUpdated: new Date(),
+        loading: false,
+        error: null,
+      });
+      
+      showToast(`🟢 Prices updated: URMOM $${urmomPrice.toFixed(7)} | DTGC $${dtgcPrice.toFixed(7)}`, 'success');
+    } catch (err) {
+      setLivePrices(prev => ({ ...prev, loading: false, error: 'Failed' }));
+      showToast('⚠️ Price fetch failed', 'error');
+    }
+  };
+
+  // Calculate live burn value
+  const liveBurnedUSD = (BURN_STATS.totalDeadWallet * livePrices.urmom).toFixed(2);
+  const liveLPBurnedUSD = (totalLPUrmom * livePrices.urmom).toFixed(2);
+
+  // Initialize testnet balances
+  const initTestnetBalances = useCallback(() => {
+    if (!TESTNET_MODE) return;
+    
+    const balances = {
+      pls: TESTNET_CONFIG.startingPLS,
+      dtgc: TESTNET_CONFIG.startingDTGC,
+      urmom: TESTNET_CONFIG.startingURMOM,
+      lp: TESTNET_CONFIG.startingLP,
+      stakedDTGC: 0,
+      stakedLP: 0,
+      rewards: 0,
+      positions: [],
+    };
+    
+    setTestnetBalances(balances);
+    localStorage.setItem('dtgc-testnet-balances', JSON.stringify(balances));
+    
+    setPlsBalance(balances.pls.toString());
+    setDtgcBalance(balances.dtgc.toString());
+    setUrmomBalance(balances.urmom.toString());
+    setLpBalance(balances.lp.toString());
+    
+    return balances;
+  }, []);
+
+  // Update balances from testnet state
+  useEffect(() => {
+    if (TESTNET_MODE && testnetBalances) {
+      setPlsBalance(testnetBalances.pls.toString());
+      setDtgcBalance(testnetBalances.dtgc.toString());
+      setUrmomBalance(testnetBalances.urmom?.toString() || '0');
+      setLpBalance(testnetBalances.lp.toString());
+      setStakedPositions(testnetBalances.positions || []);
+    }
+  }, [testnetBalances]);
+
+  // Faucet function - get test tokens
+  const claimTestTokens = useCallback(() => {
+    if (!TESTNET_MODE) return;
+    
+    const newBalances = {
+      ...testnetBalances,
+      pls: (testnetBalances?.pls || 0) + TESTNET_CONFIG.startingPLS,
+      dtgc: (testnetBalances?.dtgc || 0) + TESTNET_CONFIG.startingDTGC,
+      urmom: (testnetBalances?.urmom || 0) + TESTNET_CONFIG.startingURMOM,
+      lp: (testnetBalances?.lp || 0) + TESTNET_CONFIG.startingLP,
+    };
+    
+    setTestnetBalances(newBalances);
+    localStorage.setItem('dtgc-testnet-balances', JSON.stringify(newBalances));
+    showToast(`🎉 Received ${formatNumber(TESTNET_CONFIG.startingPLS)} PLS + ${formatNumber(TESTNET_CONFIG.startingDTGC)} DTGC + ${formatNumber(TESTNET_CONFIG.startingLP)} LP!`, 'success');
+  }, [testnetBalances]);
+
+  // Reset testnet
+  const resetTestnet = useCallback(() => {
+    if (!TESTNET_MODE) return;
+    localStorage.removeItem('dtgc-testnet-balances');
+    initTestnetBalances();
+    showToast('🔄 Testnet reset! Fresh 100M PLS added.', 'info');
+  }, [initTestnetBalances]);
+
+  const toggleTheme = () => {
+    setIsDark(!isDark);
+    localStorage.setItem('dtgc-theme', !isDark ? 'dark' : 'light');
+  };
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Connect Wallet
   const connectWallet = async () => {
+    // TESTNET MODE - No real wallet needed
+    if (TESTNET_MODE) {
+      const testAddress = '0xTEST' + Math.random().toString(16).slice(2, 10).toUpperCase() + '...TEST';
+      setAccount(testAddress);
+      
+      // Initialize or load testnet balances
+      if (!testnetBalances) {
+        initTestnetBalances();
+      }
+      
+      showToast('🧪 TESTNET: Wallet connected with 100M PLS!', 'success');
+      return;
+    }
+
+    // MAINNET MODE
     if (!window.ethereum) {
       showToast('Please install MetaMask', 'error');
       return;
@@ -1750,7 +2481,7 @@ export default function App() {
       setProvider(provider);
       setSigner(signer);
       setAccount(accounts[0]);
-      showToast('Wallet connected successfully', 'success');
+      showToast('Wallet connected', 'success');
     } catch (err) {
       console.error(err);
       showToast('Connection failed', 'error');
@@ -1759,186 +2490,198 @@ export default function App() {
     }
   };
 
-  // Load data
-  const loadData = useCallback(async () => {
-    if (!provider || !account) return;
-
-    try {
-      const dtgc = new ethers.Contract(TOKENS.DTGC.address, ERC20_ABI, provider);
-      const lp = new ethers.Contract(TOKENS.LP.address, ERC20_ABI, provider);
-      const staking = new ethers.Contract(CONTRACTS.STAKING_V2, STAKING_V2_ABI, provider);
-      const lpStaking = new ethers.Contract(CONTRACTS.LP_STAKING_V2, LP_STAKING_V2_ABI, provider);
-
-      const [dtgcBal, lpBal, pos, lpPos, stats, canVoteResult] = await Promise.all([
-        dtgc.balanceOf(account),
-        lp.balanceOf(account),
-        staking.getPosition(account),
-        lpStaking.getPosition(account),
-        staking.getContractStats(),
-        staking.canVote(account),
-      ]);
-
-      setDtgcBalance(ethers.formatEther(dtgcBal));
-      setLpBalance(ethers.formatEther(lpBal));
-      setCanVote(canVoteResult);
-
-      setContractStats({
-        totalStaked: ethers.formatEther(stats[0]),
-        stakers: stats[4].toString(),
-      });
-
-      if (pos[6]) {
-        setPosition({
-          amount: ethers.formatEther(pos[0]),
-          unlockTime: Number(pos[2]),
-          lockPeriod: Number(pos[3]),
-          apr: Number(pos[4]) / 100,
-          bonus: Number(pos[5]) / 100,
-          timeRemaining: Number(pos[7]),
-        });
-        const r = await staking.calculateAllRewards(account);
-        setRewards({
-          base: ethers.formatEther(r[0]),
-          feeShare: ethers.formatEther(r[1]),
-          bonus: ethers.formatEther(r[2]),
-        });
-      } else {
-        setPosition(null);
-      }
-
-      if (lpPos[6]) {
-        setLpPosition({
-          amount: ethers.formatEther(lpPos[0]),
-          unlockTime: Number(lpPos[2]),
-          pendingReward: ethers.formatEther(lpPos[3]),
-          pendingBonus: ethers.formatEther(lpPos[4]),
-          boost: Number(lpPos[5]) / 10000,
-          timeRemaining: Number(lpPos[7]),
-        });
-      } else {
-        setLpPosition(null);
-      }
-    } catch (err) {
-      console.error('Load data error:', err);
-    }
-  }, [provider, account]);
-
-  useEffect(() => {
-    if (account) loadData();
-  }, [account, loadData]);
-
-  // Staking functions
   const handleStake = async () => {
-    if (!signer || !stakeAmount || selectedTier === null) return;
-    try {
-      setLoading(true);
-      const amount = ethers.parseEther(stakeAmount);
+    if (!stakeAmount || parseFloat(stakeAmount) <= 0) return;
+    
+    const amount = parseFloat(stakeAmount);
+    const tierData = isLP ? DIAMOND_TIER : STAKING_TIERS[selectedTier];
+    
+    // TESTNET MODE - Simulate staking
+    if (TESTNET_MODE) {
+      const balance = isLP ? parseFloat(lpBalance) : parseFloat(dtgcBalance);
       
-      if (isLP) {
-        const lp = new ethers.Contract(TOKENS.LP.address, ERC20_ABI, signer);
-        const staking = new ethers.Contract(CONTRACTS.LP_STAKING_V2, LP_STAKING_V2_ABI, signer);
-        const allowance = await lp.allowance(account, CONTRACTS.LP_STAKING_V2);
-        if (allowance < amount) {
-          showToast('Approving LP tokens...', 'info');
-          await (await lp.approve(CONTRACTS.LP_STAKING_V2, ethers.MaxUint256)).wait();
-        }
-        showToast('Staking LP...', 'info');
-        await (await staking.stake(amount)).wait();
-      } else {
-        const dtgc = new ethers.Contract(TOKENS.DTGC.address, ERC20_ABI, signer);
-        const staking = new ethers.Contract(CONTRACTS.STAKING_V2, STAKING_V2_ABI, signer);
-        const allowance = await dtgc.allowance(account, CONTRACTS.STAKING_V2);
-        if (allowance < amount) {
-          showToast('Approving DTGC...', 'info');
-          await (await dtgc.approve(CONTRACTS.STAKING_V2, ethers.MaxUint256)).wait();
-        }
-        showToast('Staking DTGC...', 'info');
-        await (await staking.stake(amount, selectedTier)).wait();
+      if (amount > balance) {
+        showToast(`Insufficient ${isLP ? 'LP' : 'DTGC'} balance!`, 'error');
+        return;
       }
-
-      showToast('Staked successfully!', 'success');
+      
+      // Show stake video if enabled
+      if (VIDEOS_ENABLED) {
+        setStakingTierName(tierData.name);
+        setShowStakeVideo(true);
+      }
+      
+      // Show start modal
+      setModalType('start');
+      setModalOpen(true);
+      setLoading(true);
+      
+      // Simulate transaction delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Calculate fee (5% entry fee - V5)
+      const fee = amount * (V5_FEES.entryFee / 100);
+      const stakedAmount = amount - fee;
+      
+      // Create position
+      const newPosition = {
+        id: Date.now(),
+        tier: tierData.name,
+        amount: stakedAmount,
+        isLP: isLP,
+        apr: tierData.apr,
+        lockDays: tierData.lockDays,
+        startTime: Date.now(),
+        endTime: Date.now() + (tierData.lockDays * 24 * 60 * 60 * 1000),
+        rewards: 0,
+      };
+      
+      // Update balances
+      const newBalances = {
+        ...testnetBalances,
+        dtgc: isLP ? testnetBalances.dtgc : testnetBalances.dtgc - amount,
+        lp: isLP ? testnetBalances.lp - amount : testnetBalances.lp,
+        stakedDTGC: isLP ? testnetBalances.stakedDTGC : testnetBalances.stakedDTGC + stakedAmount,
+        stakedLP: isLP ? testnetBalances.stakedLP + stakedAmount : testnetBalances.stakedLP,
+        positions: [...(testnetBalances.positions || []), newPosition],
+      };
+      
+      setTestnetBalances(newBalances);
+      localStorage.setItem('dtgc-testnet-balances', JSON.stringify(newBalances));
+      
+      setLoading(false);
+      setModalType('end');
       setStakeAmount('');
-      await loadData();
-    } catch (err) {
-      showToast(err.reason || 'Transaction failed', 'error');
-    } finally {
-      setLoading(false);
+      showToast(`✅ Staked ${formatNumber(stakedAmount)} ${isLP ? 'LP' : 'DTGC'} in ${tierData.name} tier!`, 'success');
+      return;
     }
+    
+    // MAINNET - Real staking (implement later)
+    setModalType('start');
+    setModalOpen(true);
+    showToast('Mainnet staking coming soon!', 'info');
   };
 
-  const handleWithdraw = async (isLPStaking = false) => {
-    if (!signer) return;
-    try {
-      setLoading(true);
-      const staking = new ethers.Contract(
-        isLPStaking ? CONTRACTS.LP_STAKING_V2 : CONTRACTS.STAKING_V2,
-        isLPStaking ? LP_STAKING_V2_ABI : STAKING_V2_ABI,
-        signer
-      );
-      showToast('Withdrawing...', 'info');
-      await (await staking.withdraw()).wait();
-      showToast('Withdrawn successfully!', 'success');
-      await loadData();
-    } catch (err) {
-      showToast(err.reason || 'Transaction failed', 'error');
-    } finally {
-      setLoading(false);
-    }
+  // Unstake function for testnet
+  const handleUnstake = async (positionId) => {
+    if (!TESTNET_MODE) return;
+    
+    const position = testnetBalances.positions.find(p => p.id === positionId);
+    if (!position) return;
+    
+    const now = Date.now();
+    const isEarly = now < position.endTime;
+    
+    // Calculate penalty if early
+    const penalty = isEarly ? position.amount * 0.20 : position.amount * 0.05;
+    const returnAmount = position.amount - penalty;
+    
+    // Calculate rewards (simplified: APR / 365 * days staked)
+    const daysStaked = (now - position.startTime) / (24 * 60 * 60 * 1000);
+    const rewards = (position.amount * (position.apr / 100) / 365) * daysStaked;
+    
+    const newBalances = {
+      ...testnetBalances,
+      dtgc: position.isLP ? testnetBalances.dtgc + rewards : testnetBalances.dtgc + returnAmount + rewards,
+      lp: position.isLP ? testnetBalances.lp + returnAmount : testnetBalances.lp,
+      stakedDTGC: position.isLP ? testnetBalances.stakedDTGC : testnetBalances.stakedDTGC - position.amount,
+      stakedLP: position.isLP ? testnetBalances.stakedLP - position.amount : testnetBalances.stakedLP,
+      positions: testnetBalances.positions.filter(p => p.id !== positionId),
+    };
+    
+    setTestnetBalances(newBalances);
+    localStorage.setItem('dtgc-testnet-balances', JSON.stringify(newBalances));
+    
+    showToast(`✅ Unstaked! Received ${formatNumber(returnAmount)} + ${formatNumber(rewards)} rewards${isEarly ? ' (20% early exit fee)' : ''}`, 'success');
   };
 
-  const handleClaim = async (isLPStaking = false) => {
-    if (!signer) return;
-    try {
-      setLoading(true);
-      const staking = new ethers.Contract(
-        isLPStaking ? CONTRACTS.LP_STAKING_V2 : CONTRACTS.STAKING_V2,
-        isLPStaking ? LP_STAKING_V2_ABI : STAKING_V2_ABI,
-        signer
-      );
-      showToast('Claiming rewards...', 'info');
-      await (await staking.claimRewards()).wait();
-      showToast('Rewards claimed!', 'success');
-      await loadData();
-    } catch (err) {
-      showToast(err.reason || 'Transaction failed', 'error');
-    } finally {
-      setLoading(false);
-    }
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    showToast('Address copied!', 'success');
   };
 
-  const handleEmergencyWithdraw = async (isLPStaking = false) => {
-    if (!signer || !confirm('Emergency Exit: 20% penalty (2% dev + 18% DAO). Proceed?')) return;
-    try {
-      setLoading(true);
-      const staking = new ethers.Contract(
-        isLPStaking ? CONTRACTS.LP_STAKING_V2 : CONTRACTS.STAKING_V2,
-        isLPStaking ? LP_STAKING_V2_ABI : STAKING_V2_ABI,
-        signer
-      );
-      await (await staking.emergencyWithdraw()).wait();
-      showToast('Emergency withdrawal complete', 'success');
-      await loadData();
-    } catch (err) {
-      showToast(err.reason || 'Transaction failed', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const showToast = (message, type) => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 4000);
-  };
-
-  // Render
   return (
-    <>
-      <style>{styles}</style>
+    <ThemeContext.Provider value={{ isDark, toggleTheme }}>
+      <style>{getStyles(isDark)}</style>
+      
+      {/* INTRO VIDEO OVERLAY */}
+      {showIntro && VIDEOS_ENABLED && (
+        <IntroVideoOverlay onComplete={handleIntroComplete} isDark={isDark} />
+      )}
+      
+      {/* STAKE VIDEO MODAL */}
+      {showStakeVideo && VIDEOS_ENABLED && (
+        <StakeVideoModal 
+          onComplete={() => setShowStakeVideo(false)} 
+          tierName={stakingTierName}
+          isDark={isDark}
+        />
+      )}
+      
+      <MarbleBackground />
       <Particles />
       
-      <div className="app-container marble-texture">
+      <div className="app-container">
+        {/* TESTNET BANNER */}
+        {TESTNET_MODE && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 2000,
+            background: 'linear-gradient(90deg, #FF6B6B, #FF8E53, #FF6B6B)',
+            backgroundSize: '200% auto',
+            animation: 'shimmer 3s linear infinite',
+            padding: '8px 20px',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: '20px',
+            flexWrap: 'wrap',
+          }}>
+            <span style={{fontWeight: 700, color: '#FFF', fontSize: '0.85rem', letterSpacing: '1px'}}>
+              🧪 TESTNET MODE - Not Real Money!
+            </span>
+            {account && (
+              <>
+                <button
+                  onClick={claimTestTokens}
+                  style={{
+                    padding: '6px 16px',
+                    background: '#FFF',
+                    border: 'none',
+                    borderRadius: '20px',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    color: '#FF6B6B',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🚰 Get More Test Tokens
+                </button>
+                <button
+                  onClick={resetTestnet}
+                  style={{
+                    padding: '6px 16px',
+                    background: 'rgba(255,255,255,0.2)',
+                    border: '1px solid #FFF',
+                    borderRadius: '20px',
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    color: '#FFF',
+                    cursor: 'pointer',
+                  }}
+                >
+                  🔄 Reset
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Navigation */}
-        <header className={`nav-header ${scrolled ? 'scrolled' : ''}`}>
+        <header className={`nav-header ${scrolled ? 'scrolled' : ''}`} style={TESTNET_MODE ? {top: '40px'} : {}}>
           <div className="nav-content">
             <div className="logo-section">
               <div className="logo-mark">DT</div>
@@ -1950,22 +2693,67 @@ export default function App() {
 
             <nav className="nav-links">
               <button className={`nav-link ${activeTab === 'stake' ? 'active' : ''}`} onClick={() => setActiveTab('stake')}>Stake</button>
-              <button className={`nav-link ${activeTab === 'burn' ? 'active' : ''}`} onClick={() => setActiveTab('burn')}>Burn Tracker</button>
-              <button className={`nav-link ${activeTab === 'vote' ? 'active' : ''}`} onClick={() => setActiveTab('vote')}>DAO Vote</button>
+              <button className={`nav-link ${activeTab === 'burn' ? 'active' : ''}`} onClick={() => setActiveTab('burn')}>Burn Stats</button>
+              <button className={`nav-link ${activeTab === 'vote' ? 'active' : ''}`} onClick={() => setActiveTab('vote')}>DAO</button>
+              <button className={`nav-link ${activeTab === 'whitepaper' ? 'active' : ''}`} onClick={() => setActiveTab('whitepaper')}>Whitepaper</button>
+              <button className={`nav-link ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>Links</button>
             </nav>
 
-            <button className={`connect-btn ${account ? 'connected' : ''}`} onClick={connectWallet} disabled={loading}>
-              {loading && <span className="spinner" />}
-              {account ? formatAddress(account) : 'Connect Wallet'}
-            </button>
+            <div className="nav-right">
+              <button className="theme-toggle" onClick={toggleTheme}>
+                {isDark ? '☀️' : '🌙'}
+              </button>
+              <button className={`connect-btn ${account ? 'connected' : ''}`} onClick={connectWallet} disabled={loading}>
+                {loading && <span className="spinner" />}
+                {account ? formatAddress(account) : 'Connect'}
+              </button>
+            </div>
           </div>
         </header>
 
         {/* Hero */}
-        <section className="hero-section">
-          <div className="hero-badge">✦ Premium PulseChain Staking ✦</div>
+        <section className="hero-section" style={TESTNET_MODE ? {paddingTop: '180px'} : {}}>
+          <div className="hero-badge">
+            {TESTNET_MODE ? '🧪 V5 GOLD EDITION • TESTNET 🧪' : '✦ V5 GOLD EDITION • 91% CONTROLLED ✦'}
+          </div>
           <h1 className="hero-title gold-text">DTGC STAKING</h1>
-          <p className="hero-subtitle">Stake • Earn • Govern • Prosper</p>
+          <p className="hero-subtitle">V5 Gold Paper • Diamond Hands Rewarded • 9% Float</p>
+          
+          {/* Testnet Balance Display */}
+          {TESTNET_MODE && account && testnetBalances && (
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '15px',
+              flexWrap: 'wrap',
+              marginBottom: '30px',
+              padding: '20px',
+              background: isDark ? 'rgba(255,107,107,0.1)' : 'rgba(255,107,107,0.05)',
+              borderRadius: '16px',
+              border: '1px solid rgba(255,107,107,0.3)',
+            }}>
+              <div style={{textAlign: 'center', padding: '10px 20px'}}>
+                <div style={{fontSize: '1.5rem', fontWeight: 800, color: '#FF6B6B'}}>{formatNumber(testnetBalances.pls)}</div>
+                <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '1px'}}>TEST PLS</div>
+              </div>
+              <div style={{textAlign: 'center', padding: '10px 20px'}}>
+                <div style={{fontSize: '1.5rem', fontWeight: 800, color: '#FFD700'}}>{formatNumber(testnetBalances.dtgc)}</div>
+                <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '1px'}}>TEST DTGC</div>
+              </div>
+              <div style={{textAlign: 'center', padding: '10px 20px'}}>
+                <div style={{fontSize: '1.5rem', fontWeight: 800, color: '#FF9800'}}>{formatNumber(testnetBalances.urmom || 0)}</div>
+                <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '1px'}}>TEST URMOM</div>
+              </div>
+              <div style={{textAlign: 'center', padding: '10px 20px'}}>
+                <div style={{fontSize: '1.5rem', fontWeight: 800, color: '#00BCD4'}}>{formatNumber(testnetBalances.lp)}</div>
+                <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '1px'}}>TEST LP</div>
+              </div>
+              <div style={{textAlign: 'center', padding: '10px 20px', borderLeft: '1px solid rgba(255,255,255,0.2)'}}>
+                <div style={{fontSize: '1.5rem', fontWeight: 800, color: '#4CAF50'}}>{formatNumber((testnetBalances.stakedDTGC || 0) + (testnetBalances.stakedLP || 0))}</div>
+                <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '1px'}}>STAKED</div>
+              </div>
+            </div>
+          )}
           
           <div className="hero-stats">
             <div className="hero-stat">
@@ -1973,306 +2761,395 @@ export default function App() {
               <div className="hero-stat-label">Total Staked</div>
             </div>
             <div className="hero-stat">
-              <div className="hero-stat-value gold-text">{contractStats.stakers}</div>
-              <div className="hero-stat-label">Stakers</div>
+              <div className="hero-stat-value gold-text" style={{position: 'relative'}}>
+                ${livePrices.urmom.toFixed(7)}
+                {!livePrices.loading && <span style={{position: 'absolute', top: '-8px', right: '-20px', fontSize: '0.5rem', background: '#4CAF50', padding: '2px 6px', borderRadius: '10px', color: '#FFF', animation: 'pulse 2s infinite'}}>LIVE</span>}
+              </div>
+              <div className="hero-stat-label">URMOM {livePrices.loading ? '⏳ Loading...' : ''}</div>
             </div>
             <div className="hero-stat">
-              <div className="hero-stat-value gold-text">12%</div>
-              <div className="hero-stat-label">Max APR</div>
+              <div className="hero-stat-value gold-text" style={{position: 'relative'}}>
+                ${livePrices.dtgc.toFixed(7)}
+                {!livePrices.loading && <span style={{position: 'absolute', top: '-8px', right: '-20px', fontSize: '0.5rem', background: '#4CAF50', padding: '2px 6px', borderRadius: '10px', color: '#FFF', animation: 'pulse 2s infinite'}}>LIVE</span>}
+              </div>
+              <div className="hero-stat-label">DTGC {livePrices.loading ? '⏳ Loading...' : ''}</div>
             </div>
             <div className="hero-stat">
-              <div className="hero-stat-value gold-text">{formatNumber(totalUrmomBurned)}</div>
-              <div className="hero-stat-label">URMOM Burned</div>
+              <div className="hero-stat-value gold-text">${formatNumber(parseFloat(liveBurnedUSD))}</div>
+              <div className="hero-stat-label">Burned Value</div>
+            </div>
+            <div className="hero-stat">
+              <div className="hero-stat-value" style={{color: '#4CAF50'}}>91%</div>
+              <div className="hero-stat-label">Controlled Supply</div>
             </div>
           </div>
         </section>
 
-        {/* Main Content */}
         <main className="main-content">
           {/* STAKE TAB */}
           {activeTab === 'stake' && (
-            <>
-              {/* Active Positions */}
-              {position && (
-                <section className="section">
-                  <div className="position-card">
-                    <div className="position-header">
-                      <h3 className="position-title gold-text">YOUR DTGC POSITION</h3>
-                      <span className="position-tier-badge">
-                        {STAKING_TIERS.find(t => t.apr === position.apr)?.icon || '🥇'} {STAKING_TIERS.find(t => t.apr === position.apr)?.name || 'Staked'}
+            <section className="section">
+              <div className="section-header">
+                <h2 className="section-title gold-text">SELECT YOUR TIER</h2>
+                <div className="section-divider" />
+                <p className="section-description">Choose your staking tier based on lock duration and desired APR</p>
+              </div>
+
+              <div className="tiers-grid">
+                {STAKING_TIERS.map((tier) => (
+                  <div
+                    key={tier.id}
+                    className={`tier-card ${selectedTier === tier.id && !isLP ? 'selected' : ''}`}
+                    style={{ '--tier-gradient': tier.gradient }}
+                    onClick={() => { setSelectedTier(tier.id); setIsLP(false); }}
+                  >
+                    <div className="tier-icon">{tier.icon}</div>
+                    <div className="tier-name" style={{ color: tier.color }}>{tier.name}</div>
+                    <div className="tier-apr-container">
+                      <div className="tier-apr gold-text">{tier.apr}%</div>
+                      <div className="tier-apr-label">APR</div>
+                    </div>
+                    <div className="tier-features">
+                      <div className="tier-feature">
+                        <span className="tier-feature-label">Lock</span>
+                        <span className="tier-feature-value">{tier.lockDays} Days</span>
+                      </div>
+                      <div className="tier-feature">
+                        <span className="tier-feature-label">Bonus</span>
+                        <span className="tier-feature-value">+{tier.bonus}%</span>
+                      </div>
+                    </div>
+                    <span className="tier-badge">DTGC</span>
+                  </div>
+                ))}
+
+                <div
+                  className={`tier-card diamond ${isLP ? 'selected' : ''}`}
+                  onClick={() => { setSelectedTier(3); setIsLP(true); }}
+                >
+                  <div className="tier-icon">{DIAMOND_TIER.icon}</div>
+                  <div className="tier-name" style={{ color: DIAMOND_TIER.color }}>{DIAMOND_TIER.name}</div>
+                  <div className="tier-subtitle">URMOM/DTGC LP STAKE + DTGC</div>
+                  <div className="tier-apr-container">
+                    <div className="tier-apr" style={{ color: 'var(--diamond-dark)' }}>{DIAMOND_TIER.apr}%</div>
+                    <div className="tier-apr-label">APR</div>
+                  </div>
+                  <div className="tier-features">
+                    <div className="tier-feature">
+                      <span className="tier-feature-label">Lock</span>
+                      <span className="tier-feature-value">{DIAMOND_TIER.lockDays} Days</span>
+                    </div>
+                    <div className="tier-feature">
+                      <span className="tier-feature-label">Bonus</span>
+                      <span className="tier-feature-value">+{DIAMOND_TIER.bonus}%</span>
+                    </div>
+                    <div className="tier-feature">
+                      <span className="tier-feature-label">Boost</span>
+                      <span className="tier-feature-value">1x → 1.5x</span>
+                    </div>
+                  </div>
+                  <span className="tier-badge lp">LP</span>
+                </div>
+              </div>
+
+              {/* Staking Form */}
+              {selectedTier !== null && account && (
+                <div className="staking-panel">
+                  <h3 className="panel-title gold-text">
+                    {isLP ? '💎 STAKE LP TOKENS' : `${STAKING_TIERS[selectedTier]?.icon} STAKE DTGC`}
+                  </h3>
+
+                  <div className="input-group">
+                    <div className="input-header">
+                      <span className="input-label">Amount</span>
+                      <span className="balance-display" onClick={() => setStakeAmount(isLP ? lpBalance : dtgcBalance)}>
+                        Balance: {formatNumber(parseFloat(isLP ? lpBalance : dtgcBalance))} {isLP ? 'LP' : 'DTGC'}
                       </span>
                     </div>
-
-                    <div className="position-stats">
-                      <div className="position-stat">
-                        <div className="position-stat-value gold-text">{formatNumber(parseFloat(position.amount))}</div>
-                        <div className="position-stat-label">Staked DTGC</div>
+                    <div className="input-container">
+                      <input
+                        type="number"
+                        className="stake-input"
+                        placeholder="0.00"
+                        value={stakeAmount}
+                        onChange={(e) => setStakeAmount(e.target.value)}
+                      />
+                      <div className="input-suffix">
+                        <span className="token-badge">{isLP ? 'LP' : 'DTGC'}</span>
+                        <button className="max-btn" onClick={() => setStakeAmount(isLP ? lpBalance : dtgcBalance)}>MAX</button>
                       </div>
-                      <div className="position-stat">
-                        <div className="position-stat-value gold-text">{position.apr}%</div>
-                        <div className="position-stat-label">APR</div>
-                      </div>
-                      <div className="position-stat">
-                        <div className="position-stat-value gold-text">{formatNumber(parseFloat(rewards.base) + parseFloat(rewards.feeShare) + parseFloat(rewards.bonus))}</div>
-                        <div className="position-stat-label">Rewards</div>
-                      </div>
-                      <div className="position-stat">
-                        <div className="position-stat-value">{formatTime(position.timeRemaining)}</div>
-                        <div className="position-stat-label">Remaining</div>
-                      </div>
-                    </div>
-
-                    <div className="progress-container">
-                      <div className="progress-header">
-                        <span>Lock Progress</span>
-                        <span className="gold-text">{Math.min(100, Math.round((1 - position.timeRemaining / position.lockPeriod) * 100))}%</span>
-                      </div>
-                      <div className="progress-bar">
-                        <div className="progress-fill" style={{ width: `${Math.min(100, Math.round((1 - position.timeRemaining / position.lockPeriod) * 100))}%` }} />
-                      </div>
-                    </div>
-
-                    <div className="position-actions">
-                      <button className="action-btn primary" onClick={() => handleClaim(false)} disabled={loading}>Claim Rewards</button>
-                      <button className="action-btn primary" onClick={() => handleWithdraw(false)} disabled={loading || position.timeRemaining > 0}>Withdraw</button>
-                      <button className="action-btn danger" onClick={() => handleEmergencyWithdraw(false)} disabled={loading}>EES Exit</button>
                     </div>
                   </div>
-                </section>
+
+                  <button
+                    className="action-btn primary"
+                    onClick={handleStake}
+                    disabled={loading || !stakeAmount || parseFloat(stakeAmount) <= 0}
+                  >
+                    {loading && <span className="spinner" />}
+                    {isLP ? 'Stake LP Tokens' : 'Stake DTGC'}
+                  </button>
+
+                  <div className="fee-breakdown">
+                    <div className="fee-title">FEE STRUCTURE</div>
+                    <div className="fee-row"><span>Entry Fee</span><span>5% (1% Dev + 4% DAO)</span></div>
+                    <div className="fee-row"><span>Exit Fee</span><span>5% (1% Dev + 4% DAO)</span></div>
+                    <div className="fee-row"><span>Emergency Exit (EES)</span><span>20% (2% Dev + 18% DAO Vote)</span></div>
+                  </div>
+                </div>
               )}
 
-              {lpPosition && (
-                <section className="section">
-                  <div className="position-card" style={{ borderColor: 'var(--diamond-dark)', boxShadow: 'var(--glow-diamond)' }}>
-                    <div className="position-header">
-                      <h3 className="position-title" style={{ color: 'var(--diamond-dark)' }}>YOUR LP POSITION</h3>
-                      <span className="position-tier-badge" style={{ background: 'linear-gradient(135deg, var(--diamond), var(--diamond-dark))' }}>💎 Diamond</span>
-                    </div>
-
-                    <div className="position-stats">
-                      <div className="position-stat">
-                        <div className="position-stat-value" style={{ color: 'var(--diamond-dark)' }}>{formatNumber(parseFloat(lpPosition.amount))}</div>
-                        <div className="position-stat-label">Staked LP</div>
-                      </div>
-                      <div className="position-stat">
-                        <div className="position-stat-value" style={{ color: 'var(--diamond-dark)' }}>{lpPosition.boost.toFixed(2)}x</div>
-                        <div className="position-stat-label">Boost</div>
-                      </div>
-                      <div className="position-stat">
-                        <div className="position-stat-value" style={{ color: 'var(--diamond-dark)' }}>{formatNumber(parseFloat(lpPosition.pendingReward) + parseFloat(lpPosition.pendingBonus))}</div>
-                        <div className="position-stat-label">Pending DTGC</div>
-                      </div>
-                      <div className="position-stat">
-                        <div className="position-stat-value">{formatTime(lpPosition.timeRemaining)}</div>
-                        <div className="position-stat-label">Remaining</div>
-                      </div>
-                    </div>
-
-                    <div className="position-actions">
-                      <button className="action-btn primary" onClick={() => handleClaim(true)} disabled={loading}>Claim Rewards</button>
-                      <button className="action-btn primary" onClick={() => handleWithdraw(true)} disabled={loading || lpPosition.timeRemaining > 0}>Withdraw</button>
-                      <button className="action-btn danger" onClick={() => handleEmergencyWithdraw(true)} disabled={loading}>EES Exit</button>
-                    </div>
-                  </div>
-                </section>
-              )}
-
-              {/* Tier Selection */}
-              {!position && !lpPosition && (
-                <section className="section">
-                  <div className="section-header">
-                    <h2 className="section-title gold-text">SELECT YOUR TIER</h2>
-                    <div className="section-divider" />
-                    <p className="section-description">Choose your staking tier based on lock duration and desired APR</p>
-                  </div>
-
-                  <div className="tiers-grid">
-                    {STAKING_TIERS.map((tier) => (
-                      <div
-                        key={tier.id}
-                        className={`tier-card ${selectedTier === tier.id && !isLP ? 'selected' : ''}`}
-                        style={{ '--tier-gradient': tier.gradient }}
-                        onClick={() => { setSelectedTier(tier.id); setIsLP(false); }}
-                      >
-                        <div className="tier-icon">{tier.icon}</div>
-                        <div className="tier-name" style={{ color: tier.color }}>{tier.name}</div>
-                        <div className="tier-apr-container">
-                          <div className="tier-apr gold-text">{tier.apr}%</div>
-                          <div className="tier-apr-label">APR</div>
-                        </div>
-                        <div className="tier-features">
-                          <div className="tier-feature">
-                            <span className="tier-feature-label">Lock</span>
-                            <span className="tier-feature-value">{tier.lockDays} Days</span>
+              {/* Active Positions (Testnet) */}
+              {TESTNET_MODE && account && testnetBalances?.positions?.length > 0 && (
+                <div style={{
+                  maxWidth: '700px',
+                  margin: '40px auto 0',
+                  background: 'var(--bg-card)',
+                  borderRadius: '24px',
+                  padding: '30px',
+                  border: '1px solid var(--border-color)',
+                }}>
+                  <h3 style={{
+                    fontFamily: 'Cinzel, serif',
+                    fontSize: '1.2rem',
+                    letterSpacing: '3px',
+                    marginBottom: '20px',
+                    textAlign: 'center',
+                    color: 'var(--gold)',
+                  }}>📊 YOUR STAKED POSITIONS</h3>
+                  
+                  {testnetBalances.positions.map((pos) => {
+                    const now = Date.now();
+                    const isLocked = now < pos.endTime;
+                    const daysLeft = Math.max(0, Math.ceil((pos.endTime - now) / (24 * 60 * 60 * 1000)));
+                    const daysStaked = (now - pos.startTime) / (24 * 60 * 60 * 1000);
+                    const currentRewards = (pos.amount * (pos.apr / 100) / 365) * daysStaked;
+                    
+                    return (
+                      <div key={pos.id} style={{
+                        background: isDark ? 'rgba(212,175,55,0.1)' : 'rgba(212,175,55,0.05)',
+                        border: `1px solid ${isLocked ? 'rgba(255,107,107,0.3)' : 'rgba(76,175,80,0.3)'}`,
+                        borderRadius: '16px',
+                        padding: '20px',
+                        marginBottom: '15px',
+                      }}>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '15px'}}>
+                          <div>
+                            <div style={{fontFamily: 'Cinzel, serif', fontWeight: 700, fontSize: '1.1rem', color: pos.isLP ? 'var(--diamond)' : 'var(--gold)'}}>
+                              {pos.tier} {pos.isLP ? '(LP)' : '(DTGC)'}
+                            </div>
+                            <div style={{fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px'}}>
+                              Staked: <strong>{formatNumber(pos.amount)}</strong> • APR: <strong>{pos.apr}%</strong>
+                            </div>
+                            <div style={{fontSize: '0.8rem', color: isLocked ? '#FF6B6B' : '#4CAF50', marginTop: '4px'}}>
+                              {isLocked ? `🔒 ${daysLeft} days remaining` : '✅ Unlocked - Ready to claim!'}
+                            </div>
                           </div>
-                          <div className="tier-feature">
-                            <span className="tier-feature-label">Bonus</span>
-                            <span className="tier-feature-value">+{tier.bonus}%</span>
-                          </div>
-                        </div>
-                        <span className="tier-badge">DTGC</span>
-                      </div>
-                    ))}
-
-                    <div
-                      className={`tier-card diamond ${isLP ? 'selected' : ''}`}
-                      onClick={() => { setSelectedTier(3); setIsLP(true); }}
-                    >
-                      <div className="tier-icon">{DIAMOND_TIER.icon}</div>
-                      <div className="tier-name" style={{ color: DIAMOND_TIER.color }}>{DIAMOND_TIER.name}</div>
-                      <div className="tier-apr-container">
-                        <div className="tier-apr" style={{ color: 'var(--diamond-dark)' }}>{DIAMOND_TIER.apr}%</div>
-                        <div className="tier-apr-label">APR</div>
-                      </div>
-                      <div className="tier-features">
-                        <div className="tier-feature">
-                          <span className="tier-feature-label">Lock</span>
-                          <span className="tier-feature-value">{DIAMOND_TIER.lockDays} Days</span>
-                        </div>
-                        <div className="tier-feature">
-                          <span className="tier-feature-label">Bonus</span>
-                          <span className="tier-feature-value">+{DIAMOND_TIER.bonus}%</span>
-                        </div>
-                        <div className="tier-feature">
-                          <span className="tier-feature-label">Boost</span>
-                          <span className="tier-feature-value">1x → 1.5x</span>
-                        </div>
-                      </div>
-                      <span className="tier-badge lp">LP</span>
-                    </div>
-                  </div>
-
-                  {/* Staking Form */}
-                  {selectedTier !== null && account && (
-                    <div className="staking-panel">
-                      <h3 className="panel-title gold-text">
-                        {isLP ? '💎 STAKE LP TOKENS' : `${STAKING_TIERS[selectedTier]?.icon} STAKE DTGC`}
-                      </h3>
-
-                      <div className="input-group">
-                        <div className="input-header">
-                          <span className="input-label">Amount</span>
-                          <span className="balance-display" onClick={() => setStakeAmount(isLP ? lpBalance : dtgcBalance)}>
-                            Balance: {formatNumber(parseFloat(isLP ? lpBalance : dtgcBalance))} {isLP ? 'LP' : 'DTGC'}
-                          </span>
-                        </div>
-                        <div className="input-container">
-                          <input
-                            type="number"
-                            className="stake-input"
-                            placeholder="0.00"
-                            value={stakeAmount}
-                            onChange={(e) => setStakeAmount(e.target.value)}
-                          />
-                          <div className="input-suffix">
-                            <span className="token-badge">{isLP ? 'LP' : 'DTGC'}</span>
-                            <button className="max-btn" onClick={() => setStakeAmount(isLP ? lpBalance : dtgcBalance)}>MAX</button>
+                          <div style={{textAlign: 'right'}}>
+                            <div style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>Rewards Earned</div>
+                            <div style={{fontSize: '1.3rem', fontWeight: 800, color: '#4CAF50'}}>+{formatNumber(currentRewards)}</div>
+                            <button
+                              onClick={() => handleUnstake(pos.id)}
+                              style={{
+                                marginTop: '10px',
+                                padding: '8px 20px',
+                                background: isLocked ? 'linear-gradient(135deg, #FF6B6B, #FF8E53)' : 'linear-gradient(135deg, #4CAF50, #8BC34A)',
+                                border: 'none',
+                                borderRadius: '20px',
+                                fontWeight: 700,
+                                fontSize: '0.75rem',
+                                color: '#FFF',
+                                cursor: 'pointer',
+                              }}
+                            >
+                              {isLocked ? '⚠️ Early Unstake (20% Fee)' : '✅ Claim All'}
+                            </button>
                           </div>
                         </div>
                       </div>
-
-                      <button
-                        className="action-btn primary"
-                        onClick={handleStake}
-                        disabled={loading || !stakeAmount || parseFloat(stakeAmount) <= 0}
-                      >
-                        {loading && <span className="spinner" />}
-                        {isLP ? 'Stake LP Tokens' : 'Stake DTGC'}
-                      </button>
-
-                      <div className="fee-breakdown">
-                        <div className="fee-title">FEE STRUCTURE</div>
-                        <div className="fee-row"><span>Entry Fee</span><span>5% (1% Dev + 4% DAO)</span></div>
-                        <div className="fee-row"><span>Exit Fee</span><span>5% (1% Dev + 4% DAO)</span></div>
-                        <div className="fee-row"><span>Emergency Exit (EES)</span><span>20% (2% Dev + 18% DAO Vote)</span></div>
-                      </div>
-                    </div>
-                  )}
-
-                  {!account && (
-                    <div className="connect-prompt">
-                      <div className="connect-prompt-icon">🔐</div>
-                      <p className="connect-prompt-text">Connect your wallet to start staking DTGC</p>
-                      <button className="action-btn primary" style={{ maxWidth: '300px', margin: '0 auto' }} onClick={connectWallet}>
-                        Connect Wallet
-                      </button>
-                    </div>
-                  )}
-                </section>
+                    );
+                  })}
+                </div>
               )}
-            </>
+
+              {!account && (
+                <div className="connect-prompt">
+                  <div className="connect-prompt-icon">🔐</div>
+                  <p className="connect-prompt-text">Connect your wallet to start staking DTGC</p>
+                  <button className="action-btn primary" style={{ maxWidth: '260px', margin: '0 auto' }} onClick={connectWallet}>
+                    Connect Wallet
+                  </button>
+                </div>
+              )}
+
+              {/* Video Showcase at Bottom of Stake Page */}
+              {VIDEOS_ENABLED && (
+              <div className="video-showcase">
+                <p className="video-label">✦ DTGC STAKING ✦</p>
+                <div className="video-container">
+                  <video autoPlay loop muted playsInline>
+                    <source src={VIDEOS.stake} type="video/quicktime" />
+                    <source src={VIDEOS.stake.replace('.mov', '.mp4')} type="video/mp4" />
+                  </video>
+                </div>
+              </div>
+              )}
+            </section>
           )}
 
-          {/* BURN TAB */}
+          {/* BURN STATS TAB */}
           {activeTab === 'burn' && (
             <section className="section">
               <div className="burn-section">
                 <div className="burn-header">
                   <span className="burn-icon">🔥</span>
-                  <div>
-                    <h2 className="burn-title">URMOM BURN TRACKER</h2>
-                    <p className="burn-subtitle">LP tokens permanently burned at 0x...369</p>
+                  <div className="burn-header-text">
+                    <h2>🎊 $URMOM SUPER STATS 🎊</h2>
+                    <p>Live Price: ${livePrices.urmom.toFixed(7)} {livePrices.loading ? '⏳' : '🟢'} • <a href={SOCIAL_LINKS.dexscreener} target="_blank" rel="noopener noreferrer" style={{color: '#FF9800'}}>DexScreener →</a></p>
                   </div>
-                </div>
-
-                <div className="burn-stats-grid">
-                  <div className="burn-stat-card">
-                    <div className="burn-stat-value">{formatNumber(totalUrmomBurned)}</div>
-                    <div className="burn-stat-label">URMOM Burned</div>
-                  </div>
-                  <div className="burn-stat-card">
-                    <div className="burn-stat-value">{formatNumber(totalLPBurned)}</div>
-                    <div className="burn-stat-label">LP Burned</div>
-                  </div>
-                  <div className="burn-stat-card">
-                    <div className="burn-stat-value">{BURNED_LPS.length}</div>
-                    <div className="burn-stat-label">Pools Burned</div>
-                  </div>
-                  <div className="burn-stat-card">
-                    <div className="burn-stat-value">{(totalUrmomBurned / 1000000000 * 100).toFixed(2)}%</div>
-                    <div className="burn-stat-label">Supply Burned</div>
-                  </div>
-                </div>
-
-                <h3 className="burn-pools-title">🔥 BURNED LP POOLS</h3>
-                <div className="burn-pools-grid">
-                  {BURNED_LPS.filter(lp => lp.plpBurned > 0).map((lp, i) => (
-                    <a 
-                      key={i} 
-                      className="burn-pool-card"
-                      href={`${EXPLORER}/address/${lp.address}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ textDecoration: 'none' }}
+                  <div className="burn-links">
+                    <a href={SOCIAL_LINKS.dexscreener} target="_blank" rel="noopener noreferrer" className="burn-link-btn">📊 DexScreener</a>
+                    <a href={SOCIAL_LINKS.coingecko} target="_blank" rel="noopener noreferrer" className="burn-link-btn">🦎 CoinGecko</a>
+                    <button 
+                      onClick={manualRefreshPrices} 
+                      className="burn-link-btn" 
+                      style={{cursor: 'pointer', border: 'none', background: 'rgba(76,175,80,0.2)'}}
+                      disabled={livePrices.loading}
                     >
-                      <div className="burn-pool-name">{lp.name}</div>
-                      <div className="burn-pool-value">{formatNumber(lp.plpBurned)} PLP</div>
-                      <div className="burn-pool-address">{formatAddress(lp.address)}</div>
-                    </a>
-                  ))}
+                      {livePrices.loading ? '⏳ Loading...' : '🔄 Refresh Prices'}
+                    </button>
+                  </div>
+                  {livePrices.lastUpdated && (
+                    <div style={{fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', marginTop: '8px'}}>
+                      Last updated: {livePrices.lastUpdated.toLocaleTimeString()} • Auto-refreshes every 60s
+                    </div>
+                  )}
                 </div>
 
-                <h3 className="burn-pools-title">📊 URMOM TOKEN BREAKDOWN</h3>
-                <div className="burn-pools-grid">
-                  {BURN_BREAKDOWN.map((item, i) => (
-                    <div key={i} className="burn-pool-card">
-                      <div className="burn-pool-name">{item.pool}</div>
-                      <div className="burn-pool-value">{formatNumber(item.amount)}</div>
+                <div className="burn-main-stats">
+                  <div className="burn-stat-card">
+                    <div className="burn-stat-emoji">💵</div>
+                    <div className="burn-stat-value">${livePrices.urmom.toFixed(7)}</div>
+                    <a href={SOCIAL_LINKS.dexscreener} target="_blank" rel="noopener noreferrer" style={{fontSize: '0.6rem', color: '#FF9800', textDecoration: 'none'}}>📊 {livePrices.loading ? 'Loading...' : '🟢 Live'}</a>
+                    <div className="burn-stat-label">URMOM Price</div>
+                  </div>
+                  <div className="burn-stat-card">
+                    <div className="burn-stat-emoji">🪙</div>
+                    <div className="burn-stat-value">${livePrices.dtgc.toFixed(7)}</div>
+                    <a href={SOCIAL_LINKS.dexscreenerDTGC} target="_blank" rel="noopener noreferrer" style={{fontSize: '0.6rem', color: '#FFD700', textDecoration: 'none'}}>📊 {livePrices.loading ? 'Loading...' : '🟢 Live'}</a>
+                    <div className="burn-stat-label">DTGC Price</div>
+                  </div>
+                  <div className="burn-stat-card">
+                    <div className="burn-stat-emoji">🔥</div>
+                    <div className="burn-stat-value">{formatNumber(BURN_STATS.totalDeadWallet)}</div>
+                    <div className="burn-stat-subvalue" style={{color: '#FF9800'}}>545,616,403 URMOM</div>
+                    <div className="burn-stat-label">Burnt Tokens</div>
+                  </div>
+                  <div className="burn-stat-card" style={{background: 'linear-gradient(135deg, rgba(255,152,0,0.15) 0%, rgba(255,87,34,0.1) 100%)'}}>
+                    <div className="burn-stat-emoji">💎</div>
+                    <div className="burn-stat-value">{formatUSD(BURN_STATS.totalDeadWallet * livePrices.urmom)}</div>
+                    <div className="burn-stat-subvalue" style={{fontSize: '0.65rem', color: 'rgba(255,255,255,0.7)'}}>
+                      {formatNumber(BURN_STATS.totalDeadWallet)} × ${livePrices.urmom.toFixed(7)}
                     </div>
-                  ))}
+                    <div className="burn-stat-label">LIVE BURNED VALUE</div>
+                  </div>
+                </div>
+
+                {/* Calculation Breakdown Box */}
+                <div style={{
+                  background: 'rgba(255, 152, 0, 0.1)',
+                  border: '1px solid rgba(255, 152, 0, 0.3)',
+                  borderRadius: '12px',
+                  padding: '16px 20px',
+                  marginBottom: '35px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '12px'
+                }}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                    <span style={{fontSize: '1.5rem'}}>🧮</span>
+                    <span style={{fontFamily: 'Cinzel, serif', fontSize: '0.85rem', letterSpacing: '1px', color: 'rgba(255,255,255,0.8)'}}>LIVE CALCULATION {livePrices.loading ? '⏳' : '🟢'}</span>
+                  </div>
+                  <div style={{fontFamily: 'monospace', fontSize: '0.9rem', color: '#FF9800'}}>
+                    {formatFullNumber(BURN_STATS.totalDeadWallet)} URMOM × ${livePrices.urmom.toFixed(7)} = <strong style={{color: '#FFD700', fontSize: '1.1rem'}}>{formatUSD(BURN_STATS.totalDeadWallet * livePrices.urmom)}</strong>
+                  </div>
+                </div>
+
+                <div className="burn-progress-section">
+                  <div className="burn-progress-header">
+                    <span className="burn-progress-title">🏁 TOTAL BURNED / REMOVED</span>
+                    <span className="burn-progress-percent">{BURN_STATS.burnPercentage}%</span>
+                  </div>
+                  <div className="burn-progress-bar">
+                    <div className="burn-progress-fill" style={{ width: `${BURN_STATS.burnPercentage}%` }} />
+                  </div>
+                  <div className="burn-progress-blocks">
+                    {Array.from({ length: 20 }, (_, i) => (
+                      <div key={i} className={`burn-block ${i < Math.floor(BURN_STATS.burnPercentage / 5) ? 'filled' : ''}`} />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="dead-wallet-section">
+                  <h3 className="dead-wallet-title">🕳️ DEAD WALLET BREAKDOWN</h3>
+                  <div className="dead-wallet-grid">
+                    {Object.entries(BURN_STATS.deadWallets).map(([addr, amount], i) => (
+                      <div key={i} className="dead-wallet-row">
+                        <span className="dead-wallet-address">{addr.slice(0, 10)}...{addr.slice(-4)}</span>
+                        <span className={`dead-wallet-amount ${amount === 0 ? 'zero' : ''}`}>
+                          {amount === 0 ? '0.00' : formatFullNumber(amount)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="lp-burn-section">
+                  <h3 className="lp-burn-title">🧺 LP TOKENS BURNED</h3>
+                  <div className="lp-burn-grid">
+                    {BURN_STATS.lpBurnPercentages.map((lp, i) => (
+                      <div key={i} className="lp-burn-item">
+                        <div className="lp-burn-header">
+                          <span className="lp-burn-name">{lp.pair}</span>
+                          <span className="lp-burn-percent">{lp.percentage.toFixed(4)}%</span>
+                        </div>
+                        <div className="lp-burn-bar">
+                          <div className="lp-burn-fill" style={{ width: `${lp.percentage}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="lp-urmom-section">
+                  <h3 className="lp-urmom-title">📊 LP BURNED BREAKDOWN (URMOM × LIVE PRICE)</h3>
+                  <div className="lp-urmom-grid">
+                    {BURN_STATS.lpUrmomBreakdown.map((pool, i) => (
+                      <div key={i} className="lp-urmom-card" style={{ '--card-color': pool.color }}>
+                        <div className="lp-urmom-pool">{pool.pool}</div>
+                        <div className="lp-urmom-tokens">{formatNumber(pool.tokens)}</div>
+                        <div className="lp-urmom-usd">{formatUSD(pool.tokens * livePrices.urmom)}</div>
+                        <div style={{fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)', marginTop: '4px'}}>
+                          {formatNumber(pool.tokens)} × ${livePrices.urmom.toFixed(7)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ textAlign: 'center', marginTop: '20px', padding: '12px', background: 'rgba(255,152,0,0.1)', borderRadius: '10px' }}>
+                    <span style={{color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem'}}>
+                      <strong>Total LP URMOM:</strong> {formatNumber(totalLPUrmom)} = <strong style={{color: '#FF9800'}}>{formatUSD(totalLPUrmom * livePrices.urmom)}</strong>
+                    </span>
+                  </div>
                 </div>
 
                 <div className="burn-address-box">
-                  <div>
-                    <div className="burn-address-label">PulseChain Burn Address</div>
-                    <div className="burn-address-value">{BURN_ADDRESS}</div>
+                  <div className="burn-address-info">
+                    <span className="burn-address-label">PulseChain Burn Address (0x...369)</span>
+                    <span className="burn-address-value">{CONTRACT_ADDRESSES.burn}</span>
                   </div>
-                  <a 
-                    href={`${EXPLORER}/address/${BURN_ADDRESS}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="burn-view-btn"
-                  >
+                  <a href={`${EXPLORER}/address/${CONTRACT_ADDRESSES.burn}`} target="_blank" rel="noopener noreferrer" className="burn-view-btn">
                     View on PulseScan →
                   </a>
                 </div>
@@ -2280,15 +3157,15 @@ export default function App() {
             </section>
           )}
 
-          {/* VOTE TAB */}
+          {/* DAO VOTE TAB */}
           {activeTab === 'vote' && (
             <section className="section">
               <div className="voting-section">
                 <div className="voting-header">
                   <span className="voting-icon">🗳️</span>
-                  <div>
-                    <h2 className="voting-title">DAO GOVERNANCE</h2>
-                    <p className="voting-subtitle">Vote on EES penalty fund allocation</p>
+                  <div className="voting-header-text">
+                    <h2>DAO GOVERNANCE</h2>
+                    <p>Vote on EES penalty fund allocation</p>
                   </div>
                 </div>
 
@@ -2311,9 +3188,7 @@ export default function App() {
                       <span className={`eligibility-check ${canVote ? 'active' : 'inactive'}`}>
                         {canVote ? '✓' : '○'}
                       </span>
-                      <span style={{ fontWeight: 600, color: canVote ? 'var(--diamond)' : 'inherit' }}>
-                        {canVote ? 'You Can Vote!' : 'Not Eligible'}
-                      </span>
+                      <span>{canVote ? 'You Can Vote!' : 'Not Eligible'}</span>
                     </div>
                   </div>
                 </div>
@@ -2342,11 +3217,201 @@ export default function App() {
 
                 <button
                   className="vote-btn"
-                  disabled={!canVote || selectedVote === null || loading}
+                  disabled={!canVote || selectedVote === null}
                   onClick={() => showToast('Voting coming soon!', 'info')}
                 >
-                  {!account ? 'Connect Wallet to Vote' : !canVote ? 'Not Eligible to Vote' : 'Cast Your Vote'}
+                  {!account ? 'Connect Wallet' : !canVote ? 'Not Eligible' : 'Cast Your Vote'}
                 </button>
+              </div>
+            </section>
+          )}
+
+          {/* WHITEPAPER TAB */}
+          {activeTab === 'whitepaper' && (
+            <section className="section whitepaper-section">
+              <div className="section-header">
+                <h2 className="section-title gold-text">WHITEPAPER</h2>
+                <div className="section-divider" />
+                <p className="section-description">DT Gold Coin • Premium Staking Protocol</p>
+              </div>
+
+              <div className="wp-card">
+                <h3 className="wp-card-title gold-text">📜 Introduction</h3>
+                <div className="wp-card-content">
+                  <p>DT Gold Coin (DTGC) is a premium staking protocol built on PulseChain, designed to reward long-term holders while creating sustainable tokenomics through strategic burns and DAO governance.</p>
+                  <p>Paired with URMOM token, DTGC creates a dual-token ecosystem that benefits both communities through liquidity provision, staking rewards, and deflationary mechanisms.</p>
+                </div>
+              </div>
+
+              <div className="wp-card">
+                <h3 className="wp-card-title gold-text">💰 V5 GOLD PAPER TOKENOMICS</h3>
+                <div className="wp-card-content">
+                  <p><strong>Total Supply: 1,000,000,000 DTGC</strong></p>
+                  <p style={{color: 'var(--gold)', fontWeight: '600', marginBottom: '16px'}}>⚠️ 91% CONTROLLED • ONLY 9% FLOAT!</p>
+                  <table className="tokenomics-table">
+                    <thead>
+                      <tr><th>Allocation</th><th>Amount</th><th>Percentage</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>🏛️ DAO Pool</td><td>500,000,000</td><td style={{color: '#4CAF50', fontWeight: '700'}}>50%</td></tr>
+                      <tr><td>👨‍💻 Dev Wallet</td><td>323,000,000</td><td>32.3%</td></tr>
+                      <tr><td>💱 Circulating</td><td>90,000,000</td><td style={{color: '#FF9800'}}>9%</td></tr>
+                      <tr><td>🔒 LP Locked</td><td>87,000,000</td><td>8.7%</td></tr>
+                    </tbody>
+                  </table>
+                  <div className="wp-highlight">
+                    <strong>V5 Fee Structure (Diamond Hands Rewarded!):</strong><br/>
+                    • Entry Fee: 5% (1% Dev, 3% DAO, 0.75% Burn, 0.25% PLS)<br/>
+                    • Exit Fee (Diamond Hands 60+ days): <span style={{color: '#4CAF50'}}>2%</span><br/>
+                    • Exit Fee (Paper Hands &lt;60 days): <span style={{color: '#FF5252'}}>20%</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="wp-card">
+                <h3 className="wp-card-title gold-text">⭐ V5 Staking Tiers</h3>
+                <div className="wp-card-content">
+                  <table className="tokenomics-table">
+                    <thead>
+                      <tr><th>Tier</th><th>Min $</th><th>Lock</th><th>APR</th><th>Boost</th><th>Asset</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td>🥈 Silver</td><td>$200</td><td>30 days</td><td>15%</td><td>1x</td><td>DTGC</td></tr>
+                      <tr><td>🥇 Gold</td><td>$500</td><td>90 days</td><td>18%</td><td>1x</td><td>DTGC</td></tr>
+                      <tr><td>🐋 Whale</td><td>$10k</td><td>180 days</td><td>18%</td><td>1x</td><td>DTGC</td></tr>
+                      <tr style={{background: 'rgba(0, 188, 212, 0.1)'}}><td>💎 Diamond</td><td>$100</td><td>90 days</td><td style={{color: '#00BCD4', fontWeight: '700'}}>25%</td><td style={{color: '#4CAF50', fontWeight: '700'}}>2x!</td><td>LP</td></tr>
+                    </tbody>
+                  </table>
+                  <div className="wp-highlight">
+                    <strong>💎 Diamond LP = Best ROI!</strong><br/>
+                    2x boost on base APR means Diamond tier earns 50% effective APR during Genesis phase!
+                  </div>
+                </div>
+              </div>
+
+              <div className="wp-card">
+                <h3 className="wp-card-title gold-text">📈 Dynamic APR System</h3>
+                <div className="wp-card-content">
+                  <p>APR reduces as TVL grows to ensure DAO sustainability:</p>
+                  <table className="tokenomics-table">
+                    <thead>
+                      <tr><th>TVL Phase</th><th>Multiplier</th><th>Gold APR</th><th>Diamond APR</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr><td style={{color: '#4CAF50'}}>Genesis (0-50M)</td><td>100%</td><td>18%</td><td style={{fontWeight: '700'}}>50%</td></tr>
+                      <tr><td>Early (50-100M)</td><td>85%</td><td>15.3%</td><td>42.5%</td></tr>
+                      <tr><td style={{color: '#FFC107'}}>Growth (100-200M)</td><td>70%</td><td>12.6%</td><td>35%</td></tr>
+                      <tr><td>Mature (200-350M)</td><td>50%</td><td>9%</td><td>25%</td></tr>
+                      <tr><td style={{color: '#FF5722'}}>Saturated (350-500M)</td><td>35%</td><td>6.3%</td><td>17.5%</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="wp-card">
+                <h3 className="wp-card-title gold-text">🔥 Burn History (Live)</h3>
+                <div className="wp-card-content">
+                  <p><strong>{formatFullNumber(BURN_STATS.totalDeadWallet)} URMOM</strong> ({BURN_STATS.burnPercentage}% of supply) permanently burned.</p>
+                  <div className="wp-highlight">
+                    <strong>🧮 Live Value Calculation {livePrices.loading ? '⏳' : '🟢'}:</strong><br/>
+                    {formatFullNumber(BURN_STATS.totalDeadWallet)} URMOM × ${livePrices.urmom.toFixed(7)} = <strong style={{color: 'var(--gold)'}}>{formatUSD(BURN_STATS.totalDeadWallet * livePrices.urmom)}</strong>
+                  </div>
+                  <p>Burn Address: <code style={{ color: 'var(--gold)' }}>{CONTRACT_ADDRESSES.burn}</code></p>
+                </div>
+              </div>
+
+              {/* Video Background at Bottom */}
+              {VIDEOS_ENABLED && (
+              <div className="wp-video-section">
+                <video className="wp-video-bg" autoPlay loop muted playsInline>
+                  <source src={VIDEOS.whitepaper} type="video/quicktime" />
+                  <source src={VIDEOS.whitepaper.replace('.mov', '.mp4')} type="video/mp4" />
+                </video>
+                <div className="wp-video-overlay">
+                  <h3 className="wp-video-text gold-text">DTGC • PREMIUM STAKING</h3>
+                </div>
+              </div>
+              )}
+            </section>
+          )}
+
+          {/* LINKS TAB */}
+          {activeTab === 'links' && (
+            <section className="section links-section">
+              <div className="section-header">
+                <h2 className="section-title gold-text">DT & URMOM: GOLD COIN MARBLE</h2>
+                <div className="section-divider" />
+              </div>
+
+              <div className="links-grid">
+                <a href={SOCIAL_LINKS.xUrmom} target="_blank" rel="noopener noreferrer" className="link-card">
+                  <span className="link-icon">𝕏</span>
+                  <div className="link-info">
+                    <div className="link-name">URMOM Twitter</div>
+                    <div className="link-url">@UrmomPulse</div>
+                  </div>
+                </a>
+                <a href={SOCIAL_LINKS.xDumpTires} target="_blank" rel="noopener noreferrer" className="link-card">
+                  <span className="link-icon">𝕏</span>
+                  <div className="link-info">
+                    <div className="link-name">Dump Tires Twitter</div>
+                    <div className="link-url">@Dump_Tires</div>
+                  </div>
+                </a>
+                <a href={SOCIAL_LINKS.telegram} target="_blank" rel="noopener noreferrer" className="link-card">
+                  <span className="link-icon">📱</span>
+                  <div className="link-info">
+                    <div className="link-name">Telegram</div>
+                    <div className="link-url">t.me/urmomPulse</div>
+                  </div>
+                </a>
+                <a href={SOCIAL_LINKS.website} target="_blank" rel="noopener noreferrer" className="link-card">
+                  <span className="link-icon">🌐</span>
+                  <div className="link-info">
+                    <div className="link-name">Website</div>
+                    <div className="link-url">dump.tires</div>
+                  </div>
+                </a>
+                <a href={SOCIAL_LINKS.dexscreener} target="_blank" rel="noopener noreferrer" className="link-card">
+                  <span className="link-icon">📊</span>
+                  <div className="link-info">
+                    <div className="link-name">URMOM DexScreener</div>
+                    <div className="link-url">URMOM/PLS Chart</div>
+                  </div>
+                </a>
+                <a href={SOCIAL_LINKS.dexscreenerDTGC} target="_blank" rel="noopener noreferrer" className="link-card">
+                  <span className="link-icon">📊</span>
+                  <div className="link-info">
+                    <div className="link-name">DTGC DexScreener</div>
+                    <div className="link-url">DTGC/URMOM Chart</div>
+                  </div>
+                </a>
+                <a href={SOCIAL_LINKS.coingecko} target="_blank" rel="noopener noreferrer" className="link-card">
+                  <span className="link-icon">🦎</span>
+                  <div className="link-info">
+                    <div className="link-name">CoinGecko</div>
+                    <div className="link-url">URMOM Listing</div>
+                  </div>
+                </a>
+              </div>
+
+              <div className="contracts-section">
+                <h3 className="contracts-title gold-text">CONTRACT ADDRESSES</h3>
+                {[
+                  { label: '🪙 DTGC Token', addr: CONTRACT_ADDRESSES.dtgc },
+                  { label: '👩 URMOM Token', addr: CONTRACT_ADDRESSES.urmom },
+                  { label: '💧 DTGC/URMOM LP', addr: CONTRACT_ADDRESSES.lp },
+                  { label: '✅ DTGC Staking V2', addr: CONTRACT_ADDRESSES.stakingV2 },
+                  { label: '✅ LP Staking V2', addr: CONTRACT_ADDRESSES.lpStakingV2 },
+                  { label: '🗳️ DAO Voting', addr: CONTRACT_ADDRESSES.daoVoting },
+                  { label: '🏛️ DAO Treasury', addr: CONTRACT_ADDRESSES.daoTreasury },
+                  { label: '🔥 Burn Address', addr: CONTRACT_ADDRESSES.burn },
+                ].map((item, i) => (
+                  <div key={i} className="contract-row">
+                    <span className="contract-label">{item.label}</span>
+                    <span className="contract-address" onClick={() => copyToClipboard(item.addr)}>{item.addr}</span>
+                  </div>
+                ))}
               </div>
             </section>
           )}
@@ -2356,15 +3421,24 @@ export default function App() {
         <footer className="footer">
           <div className="footer-logo gold-text">DTGC</div>
           <div className="footer-links">
-            <a href={`${EXPLORER}/address/${CONTRACTS.STAKING_V2}`} target="_blank" rel="noopener noreferrer" className="footer-link">Staking Contract</a>
-            <a href={`${EXPLORER}/address/${CONTRACTS.LP_STAKING_V2}`} target="_blank" rel="noopener noreferrer" className="footer-link">LP Staking</a>
-            <a href={`${EXPLORER}/address/${CONTRACTS.DAO_VOTING}`} target="_blank" rel="noopener noreferrer" className="footer-link">DAO Voting</a>
-            <a href={`${EXPLORER}/address/${TOKENS.DTGC.address}`} target="_blank" rel="noopener noreferrer" className="footer-link">DTGC Token</a>
+            <a href={`${EXPLORER}/address/${CONTRACT_ADDRESSES.stakingV2}`} target="_blank" rel="noopener noreferrer" className="footer-link">Staking Contract</a>
+            <a href={`${EXPLORER}/address/${CONTRACT_ADDRESSES.lpStakingV2}`} target="_blank" rel="noopener noreferrer" className="footer-link">LP Staking</a>
+            <a href={`${EXPLORER}/address/${CONTRACT_ADDRESSES.daoVoting}`} target="_blank" rel="noopener noreferrer" className="footer-link">DAO Voting</a>
+            <a href={SOCIAL_LINKS.telegram} target="_blank" rel="noopener noreferrer" className="footer-link">Telegram</a>
           </div>
           <div className="footer-divider" />
-          <p className="footer-text">© 2024 DTGC • dump.tires • Premium Staking on PulseChain</p>
+          <p className="footer-text">© 2025 DTGC V5 GOLD EDITION • dump.tires • Premium Staking on PulseChain • Diamond Hands Only 💎</p>
         </footer>
       </div>
+
+      {/* Stake Modal */}
+      <StakeModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        type={modalType}
+        amount={stakeAmount}
+        tier={isLP ? 'Diamond' : STAKING_TIERS[selectedTier]?.name}
+      />
 
       {/* Toast */}
       {toast && (
@@ -2375,6 +3449,6 @@ export default function App() {
           {toast.message}
         </div>
       )}
-    </>
+    </ThemeContext.Provider>
   );
 }
