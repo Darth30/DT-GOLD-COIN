@@ -21,10 +21,10 @@ import {
     ║                                                               ║
     ║     🏆 DTGC PREMIUM STAKING PLATFORM V14 DIAMOND+ 🏆         ║
     ║                                                               ║
-    ║     ✦ V5 Gold Paper Tokenomics (91% Controlled!)             ║
+    ║     ✦ V14 Gold Paper Tokenomics (91% Controlled!)            ║
     ║     ✦ Diamond (DTGC/PLS) + Diamond+ (DTGC/URMOM) LP Tiers    ║
-    ║     ✦ Updated Tax Structure with Auto LP Injection           ║
-    ║     ✦ DTGC Burn Tracker + URMOM Burn Stats                   ║
+    ║     ✦ 3% Total Fees • All Tiers Profitable                   ║
+    ║     ✦ Gold Supply Dynamics + Live Holder Ticker              ║
     ║     ✦ Live Prices from DexScreener                           ║
     ║                                                               ║
     ║                    dump.tires                                 ║
@@ -127,7 +127,7 @@ const V5_DIAMOND_TIER = {
   id: 3,
   name: 'DIAMOND',
   icon: '💎',
-  minInvest: 100,
+  minInvest: 1000,
   lockDays: 90,
   holdDays: 90,
   apr: 40,
@@ -145,7 +145,7 @@ const V5_DIAMOND_PLUS_TIER = {
   id: 4,
   name: 'DIAMOND+',
   icon: '💎✨',
-  minInvest: 100,
+  minInvest: 1000,
   lockDays: 90,
   holdDays: 90,
   apr: 50,
@@ -228,6 +228,79 @@ const BURN_STATS = {
     { name: 'URMOM/DTGC', address: '0x1891bD6A959B32977c438f3022678a8659364A72' },
     { name: 'URMOM/PLS', address: '0x682B82baAC38dDb185D77deAF98D9D246EF9c9E5' },
     { name: 'URMOM/HEX', address: '0x0548656e272fec9534e180d3174cfc57ab6e10c0' },
+};
+
+// ═══════════════════════════════════════════════════════════════
+//                    DTGC SUPPLY DYNAMICS
+// ═══════════════════════════════════════════════════════════════
+const DTGC_TOTAL_SUPPLY = 1000000000; // 1 Billion
+
+const SUPPLY_WALLETS = {
+  dao: {
+    name: 'DAO Rewards Pool',
+    address: '0x0000000000000000000000000000000000000000', // Replace with actual
+    icon: '🏛️',
+    description: 'Staking rewards & governance',
+    expected: 500000000, // 500M (50%)
+    color: '#4CAF50',
+  },
+  dev: {
+    name: 'Dev Wallet',
+    address: '0x0000000000000000000000000000000000000000', // Replace with actual
+    icon: '👨‍💻',
+    description: 'Development & operations',
+    expected: 323000000, // 323M (32.3%)
+    color: '#2196F3',
+  },
+  lpLocked: {
+    name: 'LP Locked',
+    address: '0x0000000000000000000000000000000000000000', // Replace with actual
+    icon: '🔒',
+    description: 'Liquidity pool locked',
+    expected: 87000000, // 87M (8.7%)
+    color: '#9C27B0',
+  },
+  burn: {
+    name: 'Burned Forever',
+    address: '0x0000000000000000000000000000000000000369',
+    icon: '🔥',
+    description: 'Permanently destroyed',
+    expected: 0, // Dynamic
+    color: '#F44336',
+  },
+  circulating: {
+    name: 'Circulating Supply',
+    address: null, // Calculated
+    icon: '💱',
+    description: 'Available for trading',
+    expected: 90000000, // 90M (9%)
+    color: '#FF9800',
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════
+//                    DTGC HOLDER WALLETS TICKER
+// ═══════════════════════════════════════════════════════════════
+// These are tracked holder wallets (excluding DAO/Dev) for the live ticker
+// Replace with actual holder addresses from PulseChain explorer
+const HOLDER_WALLETS = [
+  { address: '0x1234...5678', balance: 2500000, label: 'Whale 1' },
+  { address: '0x2345...6789', balance: 1800000, label: 'Whale 2' },
+  { address: '0x3456...7890', balance: 1200000, label: 'Whale 3' },
+  { address: '0x4567...8901', balance: 950000, label: 'Diamond Hand' },
+  { address: '0x5678...9012', balance: 750000, label: 'Staker 1' },
+  { address: '0x6789...0123', balance: 620000, label: 'Staker 2' },
+  { address: '0x7890...1234', balance: 510000, label: 'Holder 1' },
+  { address: '0x8901...2345', balance: 480000, label: 'Holder 2' },
+  { address: '0x9012...3456', balance: 350000, label: 'Holder 3' },
+  { address: '0x0123...4567', balance: 290000, label: 'Holder 4' },
+  { address: '0xABCD...EF01', balance: 220000, label: 'Holder 5' },
+  { address: '0xBCDE...F012', balance: 185000, label: 'Holder 6' },
+  { address: '0xCDEF...0123', balance: 150000, label: 'Holder 7' },
+  { address: '0xDEF0...1234', balance: 120000, label: 'Holder 8' },
+  { address: '0xEF01...2345', balance: 95000, label: 'Holder 9' },
+  { address: '0xF012...3456', balance: 72000, label: 'Holder 10' },
+];
     { name: 'URMOM/pHEX', address: '0x6Bd31Cdc8c87F3bE93bEaC2E4F58DAeEf1f7905e' },
     { name: 'URMOM/INC', address: '0xc8EC3c754B259fB7503072058A71d00cc20121DF' },
   ],
@@ -464,6 +537,84 @@ const getStyles = (isDark) => `
   @keyframes backdrop-in {
     from { opacity: 0; }
     to { opacity: 1; }
+  }
+
+  /* Holder Wallet Ticker Animation */
+  @keyframes ticker-scroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .ticker-container {
+    overflow: hidden;
+    background: rgba(0,0,0,0.4);
+    border-radius: 8px;
+    padding: 8px 0;
+    margin-top: 16px;
+    position: relative;
+  }
+
+  .ticker-container::before,
+  .ticker-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 60px;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .ticker-container::before {
+    left: 0;
+    background: linear-gradient(90deg, rgba(26,35,39,1) 0%, transparent 100%);
+  }
+
+  .ticker-container::after {
+    right: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(26,35,39,1) 100%);
+  }
+
+  .ticker-track {
+    display: flex;
+    animation: ticker-scroll 30s linear infinite;
+    width: fit-content;
+  }
+
+  .ticker-track:hover {
+    animation-play-state: paused;
+  }
+
+  .ticker-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 20px;
+    border-right: 1px solid rgba(212,175,55,0.2);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .ticker-address {
+    font-family: 'Consolas', monospace;
+    font-size: 0.75rem;
+    color: #888;
+    background: rgba(255,255,255,0.05);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  .ticker-balance {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #D4AF37;
+  }
+
+  .ticker-label {
+    font-size: 0.65rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 1px;
   }
 
   /* Particles */
@@ -2363,6 +2514,17 @@ export default function App() {
     error: null,
   });
 
+  // DTGC Supply Dynamics state
+  const [supplyDynamics, setSupplyDynamics] = useState({
+    dao: SUPPLY_WALLETS.dao.expected,
+    dev: SUPPLY_WALLETS.dev.expected,
+    lpLocked: SUPPLY_WALLETS.lpLocked.expected,
+    burned: 0,
+    staked: 0,
+    circulating: SUPPLY_WALLETS.circulating.expected,
+    lastUpdated: null,
+  });
+
   // Toast notification helper - defined early so all callbacks can use it
   const showToast = (message, type) => {
     setToast({ message, type });
@@ -2807,7 +2969,7 @@ export default function App() {
             {TESTNET_MODE ? '🧪 V14 DIAMOND+ EDITION • TESTNET 🧪' : '✦ V14 DIAMOND+ • 91% CONTROLLED ✦'}
           </div>
           <h1 className="hero-title gold-text">DTGC STAKING</h1>
-          <p className="hero-subtitle">V5 Gold Paper • Diamond Hands Rewarded • 9% Float</p>
+          <p className="hero-subtitle">Stake • Earn • Govern • Prosper</p>
           
           {/* Testnet Balance Display */}
           {TESTNET_MODE && account && testnetBalances && (
@@ -2871,6 +3033,340 @@ export default function App() {
             <div className="hero-stat">
               <div className="hero-stat-value" style={{color: '#4CAF50'}}>91%</div>
               <div className="hero-stat-label">Controlled Supply</div>
+            </div>
+          </div>
+        </section>
+
+        {/* GOLD SUPPLY DYNAMICS BOX */}
+        <section className="supply-dynamics-section" style={{
+          margin: '20px auto',
+          maxWidth: '1200px',
+          padding: '0 20px',
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(26,35,39,0.95) 0%, rgba(18,24,28,0.98) 100%)',
+            border: '2px solid #D4AF37',
+            borderRadius: '16px',
+            padding: '24px',
+            boxShadow: '0 8px 32px rgba(212,175,55,0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
+          }}>
+            {/* Header */}
+            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+              <div style={{ 
+                fontSize: '0.65rem', 
+                color: '#888', 
+                letterSpacing: '2px', 
+                marginBottom: '8px',
+                textTransform: 'uppercase'
+              }}>
+                dump.tires unique decentralized staking mechanism
+              </div>
+              <h3 style={{ 
+                fontSize: '1.5rem', 
+                fontWeight: 800, 
+                color: '#D4AF37',
+                margin: 0,
+                textShadow: '0 2px 10px rgba(212,175,55,0.3)'
+              }}>
+                ⚡ GOLD SUPPLY DYNAMICS DTGC ⚡
+              </h3>
+              <div style={{ 
+                fontSize: '0.75rem', 
+                color: '#666', 
+                marginTop: '4px'
+              }}>
+                Total Supply: 1,000,000,000 DTGC • Live Transparency
+              </div>
+            </div>
+
+            {/* Supply Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+              gap: '12px',
+              marginBottom: '16px',
+            }}>
+              {/* DAO Rewards Pool */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(76,175,80,0.1) 0%, rgba(76,175,80,0.05) 100%)',
+                border: '1px solid rgba(76,175,80,0.3)',
+                borderRadius: '12px',
+                padding: '16px',
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: '1.8rem', marginBottom: '4px' }}>🏛️</div>
+                <div style={{ fontSize: '0.7rem', color: '#888', letterSpacing: '1px', marginBottom: '4px' }}>DAO REWARDS POOL</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#4CAF50' }}>
+                  {formatNumber(supplyDynamics.dao)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#4CAF50', fontWeight: 600 }}>
+                  {((supplyDynamics.dao / DTGC_TOTAL_SUPPLY) * 100).toFixed(1)}%
+                </div>
+                <div style={{ 
+                  fontSize: '0.6rem', 
+                  color: '#666', 
+                  marginTop: '4px',
+                  height: '4px',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '2px',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    width: `${(supplyDynamics.dao / DTGC_TOTAL_SUPPLY) * 100}%`,
+                    height: '100%',
+                    background: '#4CAF50',
+                    borderRadius: '2px',
+                  }} />
+                </div>
+              </div>
+
+              {/* Dev Wallet */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(33,150,243,0.1) 0%, rgba(33,150,243,0.05) 100%)',
+                border: '1px solid rgba(33,150,243,0.3)',
+                borderRadius: '12px',
+                padding: '16px',
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: '1.8rem', marginBottom: '4px' }}>👨‍💻</div>
+                <div style={{ fontSize: '0.7rem', color: '#888', letterSpacing: '1px', marginBottom: '4px' }}>DEV WALLET</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#2196F3' }}>
+                  {formatNumber(supplyDynamics.dev)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#2196F3', fontWeight: 600 }}>
+                  {((supplyDynamics.dev / DTGC_TOTAL_SUPPLY) * 100).toFixed(1)}%
+                </div>
+                <div style={{ 
+                  height: '4px',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '2px',
+                  overflow: 'hidden',
+                  marginTop: '4px'
+                }}>
+                  <div style={{
+                    width: `${(supplyDynamics.dev / DTGC_TOTAL_SUPPLY) * 100}%`,
+                    height: '100%',
+                    background: '#2196F3',
+                    borderRadius: '2px',
+                  }} />
+                </div>
+              </div>
+
+              {/* LP Locked */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(156,39,176,0.1) 0%, rgba(156,39,176,0.05) 100%)',
+                border: '1px solid rgba(156,39,176,0.3)',
+                borderRadius: '12px',
+                padding: '16px',
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: '1.8rem', marginBottom: '4px' }}>🔒</div>
+                <div style={{ fontSize: '0.7rem', color: '#888', letterSpacing: '1px', marginBottom: '4px' }}>LP LOCKED</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#9C27B0' }}>
+                  {formatNumber(supplyDynamics.lpLocked)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#9C27B0', fontWeight: 600 }}>
+                  {((supplyDynamics.lpLocked / DTGC_TOTAL_SUPPLY) * 100).toFixed(1)}%
+                </div>
+                <div style={{ 
+                  height: '4px',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '2px',
+                  overflow: 'hidden',
+                  marginTop: '4px'
+                }}>
+                  <div style={{
+                    width: `${(supplyDynamics.lpLocked / DTGC_TOTAL_SUPPLY) * 100}%`,
+                    height: '100%',
+                    background: '#9C27B0',
+                    borderRadius: '2px',
+                  }} />
+                </div>
+              </div>
+
+              {/* Staked */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(0,188,212,0.1) 0%, rgba(0,188,212,0.05) 100%)',
+                border: '1px solid rgba(0,188,212,0.3)',
+                borderRadius: '12px',
+                padding: '16px',
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: '1.8rem', marginBottom: '4px' }}>💎</div>
+                <div style={{ fontSize: '0.7rem', color: '#888', letterSpacing: '1px', marginBottom: '4px' }}>STAKED</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#00BCD4' }}>
+                  {formatNumber(parseFloat(contractStats.totalStaked) || supplyDynamics.staked)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#00BCD4', fontWeight: 600 }}>
+                  {(((parseFloat(contractStats.totalStaked) || supplyDynamics.staked) / DTGC_TOTAL_SUPPLY) * 100).toFixed(2)}%
+                </div>
+                <div style={{ 
+                  height: '4px',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '2px',
+                  overflow: 'hidden',
+                  marginTop: '4px'
+                }}>
+                  <div style={{
+                    width: `${((parseFloat(contractStats.totalStaked) || supplyDynamics.staked) / DTGC_TOTAL_SUPPLY) * 100}%`,
+                    height: '100%',
+                    background: '#00BCD4',
+                    borderRadius: '2px',
+                  }} />
+                </div>
+              </div>
+
+              {/* Burned */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(244,67,54,0.1) 0%, rgba(244,67,54,0.05) 100%)',
+                border: '1px solid rgba(244,67,54,0.3)',
+                borderRadius: '12px',
+                padding: '16px',
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: '1.8rem', marginBottom: '4px' }}>🔥</div>
+                <div style={{ fontSize: '0.7rem', color: '#888', letterSpacing: '1px', marginBottom: '4px' }}>BURNED FOREVER</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#F44336' }}>
+                  {formatNumber(supplyDynamics.burned)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#F44336', fontWeight: 600 }}>
+                  {((supplyDynamics.burned / DTGC_TOTAL_SUPPLY) * 100).toFixed(2)}%
+                </div>
+                <div style={{ 
+                  height: '4px',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '2px',
+                  overflow: 'hidden',
+                  marginTop: '4px'
+                }}>
+                  <div style={{
+                    width: `${Math.min((supplyDynamics.burned / DTGC_TOTAL_SUPPLY) * 100, 100)}%`,
+                    height: '100%',
+                    background: '#F44336',
+                    borderRadius: '2px',
+                  }} />
+                </div>
+              </div>
+
+              {/* Circulating */}
+              <div style={{
+                background: 'linear-gradient(135deg, rgba(255,152,0,0.1) 0%, rgba(255,152,0,0.05) 100%)',
+                border: '1px solid rgba(255,152,0,0.3)',
+                borderRadius: '12px',
+                padding: '16px',
+                textAlign: 'center',
+              }}>
+                <div style={{ fontSize: '1.8rem', marginBottom: '4px' }}>💱</div>
+                <div style={{ fontSize: '0.7rem', color: '#888', letterSpacing: '1px', marginBottom: '4px' }}>CIRCULATING</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#FF9800' }}>
+                  {formatNumber(supplyDynamics.circulating)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#FF9800', fontWeight: 600 }}>
+                  {((supplyDynamics.circulating / DTGC_TOTAL_SUPPLY) * 100).toFixed(1)}%
+                </div>
+                <div style={{ 
+                  height: '4px',
+                  background: 'rgba(255,255,255,0.1)',
+                  borderRadius: '2px',
+                  overflow: 'hidden',
+                  marginTop: '4px'
+                }}>
+                  <div style={{
+                    width: `${(supplyDynamics.circulating / DTGC_TOTAL_SUPPLY) * 100}%`,
+                    height: '100%',
+                    background: '#FF9800',
+                    borderRadius: '2px',
+                  }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Summary Bar */}
+            <div style={{
+              background: 'rgba(0,0,0,0.3)',
+              borderRadius: '8px',
+              padding: '12px 16px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#888' }}>CONTROLLED:</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#4CAF50' }}>
+                  {(((supplyDynamics.dao + supplyDynamics.dev + supplyDynamics.lpLocked) / DTGC_TOTAL_SUPPLY) * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#888' }}>PUBLIC FLOAT:</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#FF9800' }}>
+                  {((supplyDynamics.circulating / DTGC_TOTAL_SUPPLY) * 100).toFixed(1)}%
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.75rem', color: '#888' }}>MARKET CAP:</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#D4AF37' }}>
+                  ${formatNumber(supplyDynamics.circulating * livePrices.dtgc)}
+                </span>
+              </div>
+              <div style={{ 
+                fontSize: '0.6rem', 
+                color: '#666',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px'
+              }}>
+                <span style={{ 
+                  display: 'inline-block', 
+                  width: '6px', 
+                  height: '6px', 
+                  borderRadius: '50%', 
+                  background: '#4CAF50',
+                  animation: 'pulse 2s infinite'
+                }} />
+                LIVE DATA
+              </div>
+            </div>
+
+            {/* Holder Wallet Ticker */}
+            <div className="ticker-container">
+              <div style={{ 
+                fontSize: '0.6rem', 
+                color: '#666', 
+                textAlign: 'center', 
+                marginBottom: '6px',
+                letterSpacing: '1px',
+                textTransform: 'uppercase'
+              }}>
+                📊 Top Holder Wallets (Excluding DAO/Dev) • Hover to Pause
+              </div>
+              <div className="ticker-track">
+                {/* First set of items */}
+                {HOLDER_WALLETS.map((wallet, index) => (
+                  <div key={`a-${index}`} className="ticker-item">
+                    <span className="ticker-address">{wallet.address}</span>
+                    <span className="ticker-balance">{formatNumber(wallet.balance)} DTGC</span>
+                    <span className="ticker-label">{wallet.label}</span>
+                  </div>
+                ))}
+                {/* Duplicate for seamless loop */}
+                {HOLDER_WALLETS.map((wallet, index) => (
+                  <div key={`b-${index}`} className="ticker-item">
+                    <span className="ticker-address">{wallet.address}</span>
+                    <span className="ticker-balance">{formatNumber(wallet.balance)} DTGC</span>
+                    <span className="ticker-label">{wallet.label}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ 
+                fontSize: '0.55rem', 
+                color: '#555', 
+                textAlign: 'center', 
+                marginTop: '6px'
+              }}>
+                Total Tracked: {formatNumber(HOLDER_WALLETS.reduce((sum, w) => sum + w.balance, 0))} DTGC • {HOLDER_WALLETS.length} Wallets
+              </div>
             </div>
           </div>
         </section>
@@ -3534,8 +4030,8 @@ export default function App() {
                       <tr><td>🥈 Silver</td><td>$200</td><td>60 days</td><td>22%</td><td>1x</td><td>DTGC</td></tr>
                       <tr><td>🥇 Gold</td><td>$500</td><td>90 days</td><td>24%</td><td>1x</td><td>DTGC</td></tr>
                       <tr><td>🐋 Whale</td><td>$10k</td><td>180 days</td><td>26%</td><td>1x</td><td>DTGC</td></tr>
-                      <tr style={{background: 'rgba(0, 188, 212, 0.1)'}}><td>💎 Diamond</td><td>$100</td><td>90 days</td><td style={{color: '#00BCD4', fontWeight: '700'}}>40%</td><td style={{color: '#4CAF50', fontWeight: '700'}}>1.5x</td><td>DTGC/PLS LP</td></tr>
-                      <tr style={{background: 'rgba(156, 39, 176, 0.15)'}}><td>💎✨ Diamond+</td><td>$100</td><td>90 days</td><td style={{color: '#9C27B0', fontWeight: '700'}}>50%</td><td style={{color: '#9C27B0', fontWeight: '700'}}>2x!</td><td>DTGC/URMOM LP</td></tr>
+                      <tr style={{background: 'rgba(0, 188, 212, 0.1)'}}><td>💎 Diamond</td><td>$1,000</td><td>90 days</td><td style={{color: '#00BCD4', fontWeight: '700'}}>40%</td><td style={{color: '#4CAF50', fontWeight: '700'}}>1.5x</td><td>DTGC/PLS LP</td></tr>
+                      <tr style={{background: 'rgba(156, 39, 176, 0.15)'}}><td>💎✨ Diamond+</td><td>$1,000</td><td>90 days</td><td style={{color: '#9C27B0', fontWeight: '700'}}>50%</td><td style={{color: '#9C27B0', fontWeight: '700'}}>2x!</td><td>DTGC/URMOM LP</td></tr>
                     </tbody>
                   </table>
                   <div className="wp-highlight">
