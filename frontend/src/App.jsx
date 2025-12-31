@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
+220pximport React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
 import { ethers } from 'ethers';
 import {
   CONTRACTS,
@@ -2318,8 +2318,8 @@ const DexScreenerWidget = () => {
       position: 'fixed',
       bottom: '20px',
       left: '20px',
-      width: isExpanded ? '500px' : '320px',
-      height: isExpanded ? '450px' : '280px',
+      width: isExpanded ? '500px' : '220px',
+      height: isExpanded ? '400px' : '220px',
       background: 'linear-gradient(135deg, #1a1a2e 0%, #0d0d1a 100%)',
       border: '2px solid #D4AF37',
       borderRadius: '16px',
@@ -4007,6 +4007,50 @@ export default function App() {
                 </div>
               </div>
               )}
+              </div>
+              )}
+
+              {/* DTGC Logo/Favicon at Bottom of Stake Page */}
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '40px 20px',
+                marginTop: '20px',
+              }}>
+                <img
+                  src="/favicon.png"
+                  alt="DTGC Logo"
+                  style={{
+                    width: '120px',
+                    height: '120px',
+                    borderRadius: '50%',
+                    border: '3px solid var(--gold)',
+                    boxShadow: '0 0 30px rgba(212,175,55,0.4), 0 0 60px rgba(212,175,55,0.2)',
+                    animation: 'float 3s ease-in-out infinite',
+                  }}
+                />
+                <p style={{
+                  color: 'var(--gold)',
+                  fontFamily: 'Cinzel, serif',
+                  fontSize: '1.1rem',
+                  letterSpacing: '4px',
+                  marginTop: '16px',
+                  textTransform: 'uppercase',
+                }}>
+                  DT GOLD COIN
+                </p>
+                <p style={{
+                  color: 'var(--text-muted)',
+                  fontSize: '0.8rem',
+                  marginTop: '8px',
+                }}>
+                  Premium Staking on PulseChain
+                </p>
+              </div>
+            </section>
+
             </section>
           )}
 
@@ -4310,7 +4354,7 @@ export default function App() {
               {/* DOCUMENT DOWNLOADS */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
                 gap: '20px',
                 marginBottom: '40px',
               }}>
@@ -4578,7 +4622,7 @@ export default function App() {
                   🎯 OPTIMAL ALLOCATION STRATEGIES
                 </h3>
                 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
                   {/* Conservative Strategy */}
                   <div style={{ 
                     background: 'rgba(76,175,80,0.1)', 
