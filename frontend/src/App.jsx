@@ -2558,6 +2558,22 @@ export default function App() {
 
   // Fetch live supply dynamics (wallet balances) from PulseChain API
   const fetchSupplyDynamics = useCallback(async () => {
+    // TESTNET MODE - Use mock values instead of live data
+    if (TESTNET_MODE) {
+      const mockCirculating = DTGC_TOTAL_SUPPLY - SUPPLY_WALLETS.dao.expected - SUPPLY_WALLETS.dev.expected - SUPPLY_WALLETS.lpLocked.expected;
+      setSupplyDynamics({
+        dao: SUPPLY_WALLETS.dao.expected,
+        dev: SUPPLY_WALLETS.dev.expected,
+        lpLocked: SUPPLY_WALLETS.lpLocked.expected,
+        burned: 0,
+        staked: 0,
+        circulating: Math.max(0, mockCirculating),
+        lastUpdated: new Date(),
+      });
+      console.log('📊 Testnet mock supply loaded');
+      return;
+    }
+
     try {
       // Fetch DAO Treasury balance
       const daoRes = await fetch(`https://api.scan.pulsechain.com/api/v2/addresses/${SUPPLY_WALLETS.dao.address}/token-balances`);
@@ -3454,7 +3470,7 @@ export default function App() {
               gap: '12px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ fontSize: '0.75rem', color: '#888' }}>CONTROLLED:</span>
+                <span style={{ fontSize: '0.75rem', color: '#888' }}>PROJECT SUPPLY:</span>
                 <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#4CAF50' }}>
                   {(((supplyDynamics.dao + supplyDynamics.dev + supplyDynamics.lpLocked) / DTGC_TOTAL_SUPPLY) * 100).toFixed(1)}%
                 </span>
