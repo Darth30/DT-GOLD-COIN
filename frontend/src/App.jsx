@@ -19,9 +19,9 @@ import {
 /*
     ╔═══════════════════════════════════════════════════════════════╗
     ║                                                               ║
-    ║     🏆 DTGC PREMIUM STAKING PLATFORM V20 DIAMOND+ 🏆         ║
+    ║     🏆 DTGC PREMIUM STAKING PLATFORM V22 DIAMOND+ 🏆         ║
     ║                                                               ║
-    ║     ✦ V20 Gold Paper Tokenomics (82% Project Supply!)         ║
+    ║     ✦ V22 Gold Paper Tokenomics (82% Project Supply!)         ║
     ║     ✦ Diamond (DTGC/PLS) + Diamond+ (DTGC/URMOM) LP Tiers    ║
     ║     ✦ 3% Total Fees • All Tiers Profitable                   ║
     ║     ✦ Gold Supply Dynamics + Live Holder Ticker              ║
@@ -47,7 +47,7 @@ const DTGC_TOKENOMICS = {
   lpLocked: 87000000,        // 8.7% - LP Locked
 };
 
-// V20 PROFITABLE FEE STRUCTURE (Reduced for positive staker ROI)
+// V22 PROFITABLE FEE STRUCTURE (Reduced for positive staker ROI)
 const V5_FEES = {
   // Entry Tax: 1.5% total (reduced from 5%)
   entry: {
@@ -76,7 +76,7 @@ const V5_FEES = {
   },
 };
 
-// V20 PROFITABLE STAKING TIERS (All tiers positive ROI with 3% total fees)
+// V22 PROFITABLE STAKING TIERS (All tiers positive ROI with 3% total fees)
 const V5_STAKING_TIERS = [
   { 
     id: 0, 
@@ -136,6 +136,7 @@ const V5_DIAMOND_TIER = {
   boost: 1.5,
   isLP: true,
   lpPair: 'DTGC/PLS',
+  lpContract: '0xc33944a6020FB5620001A202Eaa67214A1AB9193', // DTGC/PLS LP
   color: '#00BCD4',
   gradient: 'linear-gradient(135deg, #B9F2FF 0%, #00BCD4 50%, #008BA3 100%)'
 };
@@ -154,6 +155,7 @@ const V5_DIAMOND_PLUS_TIER = {
   boost: 2,
   isLP: true,
   lpPair: 'DTGC/URMOM',
+  lpContract: '0x670c972Bb5388E087a2934a063064d97278e01F3', // DTGC/URMOM LP
   color: '#9C27B0',
   gradient: 'linear-gradient(135deg, #E1BEE7 0%, #9C27B0 50%, #7B1FA2 100%)'
 };
@@ -3106,7 +3108,7 @@ export default function App() {
         {/* Hero */}
         <section className="hero-section" style={TESTNET_MODE ? {paddingTop: '180px'} : {}}>
           <div className="hero-badge">
-            {TESTNET_MODE ? '🧪 V20 DIAMOND+ EDITION • TESTNET 🧪' : '✦ V20 DIAMOND+ • 82% PROJECT SUPPLY ✦'}
+            {TESTNET_MODE ? '🧪 V22 DIAMOND+ EDITION • TESTNET 🧪' : '✦ V22 DIAMOND+ • 82% PROJECT SUPPLY ✦'}
           </div>
           <h1 className="hero-title gold-text">DTGC STAKING</h1>
           <p className="hero-subtitle">Stake • Earn • Govern • Prosper</p>
@@ -4125,7 +4127,7 @@ export default function App() {
                 gap: '20px',
                 marginBottom: '40px',
               }}>
-                <a href="/docs/DTGC-V20-White-Paper.docx" download style={{
+                <a href="/docs/DTGC-V22-White-Paper.docx" download style={{
                   background: 'linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(184,134,11,0.15) 100%)',
                   border: '2px solid rgba(212,175,55,0.4)',
                   borderRadius: '16px',
@@ -4139,12 +4141,12 @@ export default function App() {
                   <span style={{fontSize: '2.5rem'}}>📄</span>
                   <div>
                     <div style={{fontFamily: 'Cinzel, serif', fontWeight: 700, color: 'var(--gold)', fontSize: '1.1rem'}}>WHITE PAPER</div>
-                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Public Overview • V20</div>
+                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Public Overview • V22</div>
                     <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px'}}>📥 Download .docx</div>
                   </div>
                 </a>
                 
-                <a href="/docs/DTGC-V20-Gold-Paper-DiamondPlus.docx" download style={{
+                <a href="/docs/DTGC-V22-Gold-Paper-DiamondPlus.docx" download style={{
                   background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(184,134,11,0.2) 100%)',
                   border: '2px solid rgba(212,175,55,0.5)',
                   borderRadius: '16px',
@@ -4163,7 +4165,7 @@ export default function App() {
                   </div>
                 </a>
                 
-                <a href="/docs/DTGC-V20-Gold-Paper-Quant.docx" download style={{
+                <a href="/docs/DTGC-V22-Gold-Paper-Quant.docx" download style={{
                   background: 'linear-gradient(135deg, rgba(26,35,126,0.1) 0%, rgba(48,63,159,0.15) 100%)',
                   border: '2px solid rgba(26,35,126,0.4)',
                   borderRadius: '16px',
@@ -4208,7 +4210,7 @@ export default function App() {
                     </tbody>
                   </table>
                   <div className="wp-highlight">
-                    <strong>V20 Tax Structure (Optimized for Staker Profitability):</strong><br/>
+                    <strong>V22 Tax Structure (Optimized for Staker Profitability):</strong><br/>
                     <div style={{marginTop: '8px'}}>
                       <strong style={{color: '#4CAF50'}}>Entry Tax (1.5%):</strong> 0.75% DAO • 0.25% Dev • 0.25% DTGC/URMOM LP • 0.15% DTGC/PLS LP • 0.1% Burn<br/><br/>
                       <strong style={{color: '#4CAF50'}}>Exit Tax (1.5%):</strong> Same breakdown • <strong>Only 3% total fees!</strong><br/><br/>
@@ -4219,7 +4221,7 @@ export default function App() {
               </div>
 
               <div className="wp-card">
-                <h3 className="wp-card-title gold-text">⭐ V20 Staking Tiers (All Profitable!)</h3>
+                <h3 className="wp-card-title gold-text">⭐ V22 Staking Tiers (All Profitable!)</h3>
                 <div className="wp-card-content">
                   <table className="tokenomics-table">
                     <thead>
@@ -4379,7 +4381,7 @@ export default function App() {
             <a href={SOCIAL_LINKS.telegram} target="_blank" rel="noopener noreferrer" className="footer-link">Telegram</a>
           </div>
           <div className="footer-divider" />
-          <p className="footer-text">© 2025 DTGC V20 DIAMOND+ EDITION • dtgc.io • Premium Staking on PulseChain • Diamond & Diamond+ LP Tiers 💎✨</p>
+          <p className="footer-text">© 2025 DTGC V22 DIAMOND+ EDITION • dtgc.io • Premium Staking on PulseChain • Diamond & Diamond+ LP Tiers 💎✨</p>
         </footer>
       </div>
 
