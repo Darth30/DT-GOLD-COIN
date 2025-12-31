@@ -2985,7 +2985,7 @@ export default function App() {
     setTestnetBalances(newBalances);
     localStorage.setItem('dtgc-testnet-balances', JSON.stringify(newBalances));
     
-    showToast(`✅ Unstaked! Received ${formatNumber(returnAmount)} + ${formatNumber(rewards)} rewards${isEarly ? ' (20% early exit fee)' : ''}`, 'success');
+    showToast(`✅ Unstaked! Received ${formatNumber(returnAmount)} + ${formatNumber(rewards)} rewards${isEarly ? ' (12% early exit fee)' : ''}`, 'success');
   };
 
   const copyToClipboard = (text) => {
