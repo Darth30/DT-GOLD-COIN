@@ -19,13 +19,13 @@ import {
 /*
     ╔═══════════════════════════════════════════════════════════════╗
     ║                                                               ║
-    ║     🏆 DTGC PREMIUM STAKING PLATFORM V5 GOLD EDITION 🏆     ║
+    ║     🏆 DTGC PREMIUM STAKING PLATFORM V14 DIAMOND+ 🏆         ║
     ║                                                               ║
     ║     ✦ V5 Gold Paper Tokenomics (91% Controlled!)             ║
-    ║     ✦ Video Integration (Popup, Stake, Whitepaper)           ║
-    ║     ✦ Light/Dark Mode + White Marble Background              ║
-    ║     ✦ Live URMOM/DTGC Prices from DexScreener                ║
-    ║     ✦ Full Burn Stats + DAO Voting                           ║
+    ║     ✦ Diamond (DTGC/PLS) + Diamond+ (DTGC/URMOM) LP Tiers    ║
+    ║     ✦ Updated Tax Structure with Auto LP Injection           ║
+    ║     ✦ DTGC Burn Tracker + URMOM Burn Stats                   ║
+    ║     ✦ Live Prices from DexScreener                           ║
     ║                                                               ║
     ║                    dump.tires                                 ║
     ╚═══════════════════════════════════════════════════════════════╝
@@ -47,25 +47,48 @@ const DTGC_TOKENOMICS = {
   lpLocked: 87000000,        // 8.7% - LP Locked
 };
 
-// V5 Fee Structure
+// V14 PROFITABLE FEE STRUCTURE (Reduced for positive staker ROI)
 const V5_FEES = {
-  entryFee: 5,               // 5% entry fee
-  exitFeeDiamond: 2,         // 2% exit for diamond hands (60+ days)
-  exitFeeEarly: 20,          // 20% exit for paper hands (<60 days)
+  // Entry Tax: 1.5% total (reduced from 5%)
+  entry: {
+    total: 1.5,
+    daoTreasury: 0.75,       // 0.75% DAO Treasury
+    dev: 0.25,               // 0.25% Dev
+    autoLP_DTGC_URMOM: 0.25, // 0.25% Auto LP DTGC/URMOM
+    autoLP_DTGC_PLS: 0.15,   // 0.15% DTGC/PLS
+    burn: 0.10,              // 0.10% DTGC Burn
+  },
+  // Exit Tax: 1.5% total (same breakdown)
+  exit: {
+    total: 1.5,
+    daoTreasury: 0.75,
+    dev: 0.25,
+    autoLP_DTGC_URMOM: 0.25,
+    autoLP_DTGC_PLS: 0.15,
+    burn: 0.10,
+  },
+  // EES (Emergency End Stake): 12% total (reduced from 20%)
+  ees: {
+    total: 12,
+    dev: 3,              // 3% Dev
+    dao: 7,              // 7% DAO
+    autoLP: 2,           // 2% Auto LP
+  },
 };
 
-// V5 Staking Tiers (with card styling)
+// V14 PROFITABLE STAKING TIERS (All tiers positive ROI with 3% total fees)
 const V5_STAKING_TIERS = [
   { 
     id: 0, 
     name: 'SILVER', 
     icon: '🥈', 
     minInvest: 200, 
-    lockDays: 30, 
+    lockDays: 60,  // Extended from 30 to 60 days
     holdDays: 60, 
-    apr: 15, 
+    apr: 22,       // Increased from 15%
     bonus: 10, 
     boost: 1,
+    asset: 'DTGC',
     color: '#C0C0C0',
     gradient: 'linear-gradient(135deg, #E8E8E8 0%, #C0C0C0 50%, #A8A8A8 100%)'
   },
@@ -76,9 +99,10 @@ const V5_STAKING_TIERS = [
     minInvest: 500, 
     lockDays: 90, 
     holdDays: 90, 
-    apr: 18, 
+    apr: 24,       // Increased from 18%
     bonus: 10, 
     boost: 1,
+    asset: 'DTGC',
     color: '#D4AF37',
     gradient: 'linear-gradient(135deg, #FFF1A8 0%, #D4AF37 50%, #B8860B 100%)'
   },
@@ -89,15 +113,16 @@ const V5_STAKING_TIERS = [
     minInvest: 10000, 
     lockDays: 180, 
     holdDays: 180, 
-    apr: 18, 
+    apr: 26,       // Increased from 18%
     bonus: 10, 
     boost: 1,
+    asset: 'DTGC',
     color: '#4169E1',
     gradient: 'linear-gradient(135deg, #6B8DD6 0%, #4169E1 50%, #2E4FA3 100%)'
   },
 ];
 
-// V5 Diamond Tier (LP stakers - 2x boost!)
+// Diamond Tier (DTGC/PLS LP - 1.5x boost!)
 const V5_DIAMOND_TIER = {
   id: 3,
   name: 'DIAMOND',
@@ -105,12 +130,32 @@ const V5_DIAMOND_TIER = {
   minInvest: 100,
   lockDays: 90,
   holdDays: 90,
-  apr: 25,
+  apr: 40,
+  effectiveApr: 40 * 1.5, // 60% effective
+  bonus: 12,
+  boost: 1.5,
+  isLP: true,
+  lpPair: 'DTGC/PLS',
+  color: '#00BCD4',
+  gradient: 'linear-gradient(135deg, #B9F2FF 0%, #00BCD4 50%, #008BA3 100%)'
+};
+
+// Diamond+ Tier (DTGC/URMOM LP - 2x boost!)
+const V5_DIAMOND_PLUS_TIER = {
+  id: 4,
+  name: 'DIAMOND+',
+  icon: '💎✨',
+  minInvest: 100,
+  lockDays: 90,
+  holdDays: 90,
+  apr: 50,
+  effectiveApr: 50 * 2, // 100% effective!
   bonus: 15,
   boost: 2,
   isLP: true,
-  color: '#00BCD4',
-  gradient: 'linear-gradient(135deg, #B9F2FF 0%, #00BCD4 50%, #008BA3 100%)'
+  lpPair: 'DTGC/URMOM',
+  color: '#9C27B0',
+  gradient: 'linear-gradient(135deg, #E1BEE7 0%, #9C27B0 50%, #7B1FA2 100%)'
 };
 
 // V5 Dynamic APR (reduces as TVL grows)
@@ -2539,7 +2584,7 @@ export default function App() {
     if (!stakeAmount || parseFloat(stakeAmount) <= 0) return;
     
     const amount = parseFloat(stakeAmount);
-    const tierData = isLP ? V5_DIAMOND_TIER : V5_STAKING_TIERS[selectedTier];
+    const tierData = selectedTier === 4 ? V5_DIAMOND_PLUS_TIER : (selectedTier === 3 ? V5_DIAMOND_TIER : V5_STAKING_TIERS[selectedTier]);
     
     // TESTNET MODE - Simulate staking
     if (TESTNET_MODE) {
@@ -2759,7 +2804,7 @@ export default function App() {
         {/* Hero */}
         <section className="hero-section" style={TESTNET_MODE ? {paddingTop: '180px'} : {}}>
           <div className="hero-badge">
-            {TESTNET_MODE ? '🧪 V5 GOLD EDITION • TESTNET 🧪' : '✦ V5 GOLD EDITION • 91% CONTROLLED ✦'}
+            {TESTNET_MODE ? '🧪 V14 DIAMOND+ EDITION • TESTNET 🧪' : '✦ V14 DIAMOND+ • 91% CONTROLLED ✦'}
           </div>
           <h1 className="hero-title gold-text">DTGC STAKING</h1>
           <p className="hero-subtitle">V5 Gold Paper • Diamond Hands Rewarded • 9% Float</p>
@@ -2870,12 +2915,12 @@ export default function App() {
                 ))}
 
                 <div
-                  className={`tier-card diamond ${isLP ? 'selected' : ''}`}
+                  className={`tier-card diamond ${isLP && selectedTier === 3 ? 'selected' : ''}`}
                   onClick={() => { setSelectedTier(3); setIsLP(true); }}
                 >
                   <div className="tier-icon">{V5_DIAMOND_TIER.icon}</div>
                   <div className="tier-name" style={{ color: V5_DIAMOND_TIER.color }}>{V5_DIAMOND_TIER.name}</div>
-                  <div className="tier-subtitle">URMOM/DTGC LP • 2x BOOST!</div>
+                  <div className="tier-subtitle">{V5_DIAMOND_TIER.lpPair} LP • {V5_DIAMOND_TIER.boost}x BOOST!</div>
                   <div className="tier-min-invest" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Min: ${V5_DIAMOND_TIER.minInvest}</div>
                   <div className="tier-apr-container">
                     <div className="tier-apr" style={{ color: 'var(--diamond-dark)' }}>{V5_DIAMOND_TIER.apr * V5_DIAMOND_TIER.boost}%</div>
@@ -2892,10 +2937,40 @@ export default function App() {
                     </div>
                     <div className="tier-feature">
                       <span className="tier-feature-label">Boost</span>
-                      <span className="tier-feature-value" style={{ color: '#4CAF50', fontWeight: '700' }}>2x!</span>
+                      <span className="tier-feature-value" style={{ color: '#4CAF50', fontWeight: '700' }}>{V5_DIAMOND_TIER.boost}x!</span>
                     </div>
                   </div>
                   <span className="tier-badge lp">LP</span>
+                </div>
+
+                <div
+                  className={`tier-card diamond-plus ${isLP && selectedTier === 4 ? 'selected' : ''}`}
+                  onClick={() => { setSelectedTier(4); setIsLP(true); }}
+                  style={{ background: 'linear-gradient(135deg, rgba(156,39,176,0.1) 0%, rgba(123,31,162,0.15) 100%)', border: '2px solid #9C27B0' }}
+                >
+                  <div className="tier-icon" style={{ fontSize: '2.5rem' }}>{V5_DIAMOND_PLUS_TIER.icon}</div>
+                  <div className="tier-name" style={{ color: V5_DIAMOND_PLUS_TIER.color }}>{V5_DIAMOND_PLUS_TIER.name}</div>
+                  <div className="tier-subtitle" style={{ color: '#9C27B0' }}>{V5_DIAMOND_PLUS_TIER.lpPair} LP • {V5_DIAMOND_PLUS_TIER.boost}x BOOST!</div>
+                  <div className="tier-min-invest" style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '8px' }}>Min: ${V5_DIAMOND_PLUS_TIER.minInvest}</div>
+                  <div className="tier-apr-container">
+                    <div className="tier-apr" style={{ color: '#9C27B0', fontSize: '2.2rem' }}>{V5_DIAMOND_PLUS_TIER.apr * V5_DIAMOND_PLUS_TIER.boost}%</div>
+                    <div className="tier-apr-label">EFFECTIVE APR</div>
+                  </div>
+                  <div className="tier-features">
+                    <div className="tier-feature">
+                      <span className="tier-feature-label">Lock</span>
+                      <span className="tier-feature-value">{V5_DIAMOND_PLUS_TIER.lockDays} Days</span>
+                    </div>
+                    <div className="tier-feature">
+                      <span className="tier-feature-label">Bonus</span>
+                      <span className="tier-feature-value">+{V5_DIAMOND_PLUS_TIER.bonus}%</span>
+                    </div>
+                    <div className="tier-feature">
+                      <span className="tier-feature-label">Boost</span>
+                      <span className="tier-feature-value" style={{ color: '#9C27B0', fontWeight: '700' }}>{V5_DIAMOND_PLUS_TIER.boost}x!!</span>
+                    </div>
+                  </div>
+                  <span className="tier-badge lp" style={{ background: 'linear-gradient(135deg, #9C27B0 0%, #7B1FA2 100%)' }}>LP+</span>
                 </div>
               </div>
 
@@ -2938,10 +3013,16 @@ export default function App() {
                   </button>
 
                   <div className="fee-breakdown">
-                    <div className="fee-title">FEE STRUCTURE</div>
-                    <div className="fee-row"><span>Entry Fee</span><span>5% (1% Dev + 4% DAO)</span></div>
-                    <div className="fee-row"><span>Exit Fee</span><span>5% (1% Dev + 4% DAO)</span></div>
-                    <div className="fee-row"><span>Emergency Exit (EES)</span><span>20% (2% Dev + 18% DAO Vote)</span></div>
+                    <div className="fee-title">TAX STRUCTURE <span style={{ fontSize: '0.7rem', color: 'var(--gold)', cursor: 'pointer' }} onClick={() => setActiveTab('whitepaper')}>📄 Details</span></div>
+                    <div className="fee-row"><span>Entry Tax</span><span style={{color: '#4CAF50'}}>1.5%</span></div>
+                    <div className="fee-row"><span>Exit Tax</span><span style={{color: '#4CAF50'}}>1.5%</span></div>
+                    <div className="fee-row"><span>EES (Emergency End Stake)</span><span style={{color: '#FF5722'}}>12%</span></div>
+                    <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
+                      Entry/Exit: 0.75% DAO • 0.25% Dev • 0.25% DTGC/URMOM LP • 0.15% DTGC/PLS LP • 0.1% Burn
+                    </div>
+                    <div style={{ fontSize: '0.6rem', color: '#4CAF50', marginTop: '4px', textAlign: 'center' }}>
+                      ✓ All tiers profitable • Only 3% total fees
+                    </div>
                   </div>
                 </div>
               )}
@@ -2994,7 +3075,8 @@ export default function App() {
                           </div>
                           <div style={{textAlign: 'right'}}>
                             <div style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>Rewards Earned</div>
-                            <div style={{fontSize: '1.3rem', fontWeight: 800, color: '#4CAF50'}}>+{formatNumber(currentRewards)}</div>
+                            <div style={{fontSize: '1.3rem', fontWeight: 800, color: '#4CAF50'}}>+{formatNumber(currentRewards)} {pos.isLP ? 'LP' : 'DTGC'}</div>
+                            <div style={{fontSize: '0.85rem', color: '#4CAF50', opacity: 0.8}}>≈ ${formatNumber(currentRewards * livePrices.dtgc)}</div>
                             <button
                               onClick={() => handleUnstake(pos.id)}
                               style={{
@@ -3126,7 +3208,7 @@ export default function App() {
 
                 <div className="burn-progress-section">
                   <div className="burn-progress-header">
-                    <span className="burn-progress-title">🏁 TOTAL BURNED / REMOVED</span>
+                    <span className="burn-progress-title">🏁 URMOM TOTAL BURNED / REMOVED</span>
                     <span className="burn-progress-percent">{BURN_STATS.burnPercentage}%</span>
                   </div>
                   <div className="burn-progress-bar">
@@ -3136,6 +3218,65 @@ export default function App() {
                     {Array.from({ length: 20 }, (_, i) => (
                       <div key={i} className={`burn-block ${i < Math.floor(BURN_STATS.burnPercentage / 5) ? 'filled' : ''}`} />
                     ))}
+                  </div>
+                </div>
+
+                {/* DTGC BURN TRACKER - SEPARATE SECTION */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(184,134,11,0.15) 100%)',
+                  border: '2px solid rgba(212,175,55,0.4)',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  marginBottom: '35px',
+                }}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px'}}>
+                    <span style={{fontSize: '2rem'}}>🪙🔥</span>
+                    <div>
+                      <h3 style={{fontFamily: 'Cinzel, serif', color: '#D4AF37', margin: 0, letterSpacing: '2px'}}>DTGC BURN TRACKER</h3>
+                      <p style={{fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', margin: '4px 0 0'}}>0.25% of every Entry/Exit tax is burned forever</p>
+                    </div>
+                  </div>
+                  
+                  <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px'}}>
+                    <div style={{
+                      background: 'rgba(0,0,0,0.3)',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      textAlign: 'center',
+                      border: '1px solid rgba(212,175,55,0.3)'
+                    }}>
+                      <div style={{fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '1px', marginBottom: '8px'}}>DTGC BURNED</div>
+                      <div style={{fontSize: '1.8rem', fontWeight: '800', color: '#D4AF37'}}>{formatNumber(0)}</div>
+                      <div style={{fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)'}}>Coming soon...</div>
+                    </div>
+                    <div style={{
+                      background: 'rgba(0,0,0,0.3)',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      textAlign: 'center',
+                      border: '1px solid rgba(212,175,55,0.3)'
+                    }}>
+                      <div style={{fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '1px', marginBottom: '8px'}}>USD VALUE</div>
+                      <div style={{fontSize: '1.8rem', fontWeight: '800', color: '#4CAF50'}}>$0.00</div>
+                      <div style={{fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)'}}>@ ${livePrices.dtgc.toFixed(7)}</div>
+                    </div>
+                    <div style={{
+                      background: 'rgba(0,0,0,0.3)',
+                      borderRadius: '12px',
+                      padding: '16px',
+                      textAlign: 'center',
+                      border: '1px solid rgba(212,175,55,0.3)'
+                    }}>
+                      <div style={{fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', letterSpacing: '1px', marginBottom: '8px'}}>% OF SUPPLY</div>
+                      <div style={{fontSize: '1.8rem', fontWeight: '800', color: '#FF9800'}}>0.00%</div>
+                      <div style={{fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)'}}>of 1B total</div>
+                    </div>
+                  </div>
+                  
+                  <div style={{marginTop: '16px', padding: '12px', background: 'rgba(212,175,55,0.1)', borderRadius: '8px', textAlign: 'center'}}>
+                    <span style={{fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)'}}>
+                      Burn Address: <code style={{color: '#D4AF37'}}>{CONTRACT_ADDRESSES.burn}</code>
+                    </span>
                   </div>
                 </div>
 
@@ -3282,6 +3423,71 @@ export default function App() {
                 <p className="section-description">DT Gold Coin • Premium Staking Protocol</p>
               </div>
 
+              {/* DOCUMENT DOWNLOADS */}
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '20px',
+                marginBottom: '40px',
+              }}>
+                <a href="/docs/DTGC-V14-White-Paper.docx" download style={{
+                  background: 'linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(184,134,11,0.15) 100%)',
+                  border: '2px solid rgba(212,175,55,0.4)',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  transition: 'all 0.3s ease',
+                }}>
+                  <span style={{fontSize: '2.5rem'}}>📄</span>
+                  <div>
+                    <div style={{fontFamily: 'Cinzel, serif', fontWeight: 700, color: 'var(--gold)', fontSize: '1.1rem'}}>WHITE PAPER</div>
+                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Public Overview • V14</div>
+                    <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px'}}>📥 Download .docx</div>
+                  </div>
+                </a>
+                
+                <a href="/docs/DTGC-V14-Gold-Paper-DiamondPlus.docx" download style={{
+                  background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(184,134,11,0.2) 100%)',
+                  border: '2px solid rgba(212,175,55,0.5)',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  transition: 'all 0.3s ease',
+                }}>
+                  <span style={{fontSize: '2.5rem'}}>📜</span>
+                  <div>
+                    <div style={{fontFamily: 'Cinzel, serif', fontWeight: 700, color: 'var(--gold)', fontSize: '1.1rem'}}>GOLD PAPER</div>
+                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Full Tokenomics • Diamond+ Edition</div>
+                    <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px'}}>📥 Download .docx</div>
+                  </div>
+                </a>
+                
+                <a href="/docs/DTGC-V14-Gold-Paper-Quant.docx" download style={{
+                  background: 'linear-gradient(135deg, rgba(26,35,126,0.1) 0%, rgba(48,63,159,0.15) 100%)',
+                  border: '2px solid rgba(26,35,126,0.4)',
+                  borderRadius: '16px',
+                  padding: '24px',
+                  textDecoration: 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '16px',
+                  transition: 'all 0.3s ease',
+                }}>
+                  <span style={{fontSize: '2.5rem'}}>📊</span>
+                  <div>
+                    <div style={{fontFamily: 'Cinzel, serif', fontWeight: 700, color: '#5C6BC0', fontSize: '1.1rem'}}>GOLD PAPER QUANT</div>
+                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Risk Analysis • ROI Modeling</div>
+                    <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px'}}>📥 Download .docx</div>
+                  </div>
+                </a>
+              </div>
+
               <div className="wp-card">
                 <h3 className="wp-card-title gold-text">📜 Introduction</h3>
                 <div className="wp-card-content">
@@ -3307,31 +3513,35 @@ export default function App() {
                     </tbody>
                   </table>
                   <div className="wp-highlight">
-                    <strong>V5 Fee Structure (Diamond Hands Rewarded!):</strong><br/>
-                    • Entry Fee: 5% (1% Dev, 3% DAO, 0.75% Burn, 0.25% PLS)<br/>
-                    • Exit Fee (Diamond Hands 60+ days): <span style={{color: '#4CAF50'}}>2%</span><br/>
-                    • Exit Fee (Paper Hands &lt;60 days): <span style={{color: '#FF5252'}}>20%</span>
+                    <strong>V14 Tax Structure (Optimized for Staker Profitability):</strong><br/>
+                    <div style={{marginTop: '8px'}}>
+                      <strong style={{color: '#4CAF50'}}>Entry Tax (1.5%):</strong> 0.75% DAO • 0.25% Dev • 0.25% DTGC/URMOM LP • 0.15% DTGC/PLS LP • 0.1% Burn<br/><br/>
+                      <strong style={{color: '#4CAF50'}}>Exit Tax (1.5%):</strong> Same breakdown • <strong>Only 3% total fees!</strong><br/><br/>
+                      <strong style={{color: '#FF5722'}}>EES - Emergency End Stake (12%):</strong> 7% DAO • 3% Dev • 2% Auto LP
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="wp-card">
-                <h3 className="wp-card-title gold-text">⭐ V5 Staking Tiers</h3>
+                <h3 className="wp-card-title gold-text">⭐ V14 Staking Tiers (All Profitable!)</h3>
                 <div className="wp-card-content">
                   <table className="tokenomics-table">
                     <thead>
                       <tr><th>Tier</th><th>Min $</th><th>Lock</th><th>APR</th><th>Boost</th><th>Asset</th></tr>
                     </thead>
                     <tbody>
-                      <tr><td>🥈 Silver</td><td>$200</td><td>30 days</td><td>15%</td><td>1x</td><td>DTGC</td></tr>
-                      <tr><td>🥇 Gold</td><td>$500</td><td>90 days</td><td>18%</td><td>1x</td><td>DTGC</td></tr>
-                      <tr><td>🐋 Whale</td><td>$10k</td><td>180 days</td><td>18%</td><td>1x</td><td>DTGC</td></tr>
-                      <tr style={{background: 'rgba(0, 188, 212, 0.1)'}}><td>💎 Diamond</td><td>$100</td><td>90 days</td><td style={{color: '#00BCD4', fontWeight: '700'}}>25%</td><td style={{color: '#4CAF50', fontWeight: '700'}}>2x!</td><td>LP</td></tr>
+                      <tr><td>🥈 Silver</td><td>$200</td><td>60 days</td><td>22%</td><td>1x</td><td>DTGC</td></tr>
+                      <tr><td>🥇 Gold</td><td>$500</td><td>90 days</td><td>24%</td><td>1x</td><td>DTGC</td></tr>
+                      <tr><td>🐋 Whale</td><td>$10k</td><td>180 days</td><td>26%</td><td>1x</td><td>DTGC</td></tr>
+                      <tr style={{background: 'rgba(0, 188, 212, 0.1)'}}><td>💎 Diamond</td><td>$100</td><td>90 days</td><td style={{color: '#00BCD4', fontWeight: '700'}}>40%</td><td style={{color: '#4CAF50', fontWeight: '700'}}>1.5x</td><td>DTGC/PLS LP</td></tr>
+                      <tr style={{background: 'rgba(156, 39, 176, 0.15)'}}><td>💎✨ Diamond+</td><td>$100</td><td>90 days</td><td style={{color: '#9C27B0', fontWeight: '700'}}>50%</td><td style={{color: '#9C27B0', fontWeight: '700'}}>2x!</td><td>DTGC/URMOM LP</td></tr>
                     </tbody>
                   </table>
                   <div className="wp-highlight">
-                    <strong>💎 Diamond LP = Best ROI!</strong><br/>
-                    2x boost on base APR means Diamond tier earns 50% effective APR during Genesis phase!
+                    <strong>✅ All Tiers Profitable!</strong> With only 3% total fees:<br/>
+                    Silver: <span style={{color: '#4CAF50'}}>+0.6% net</span> • Gold: <span style={{color: '#4CAF50'}}>+2.9% net</span> • Whale: <span style={{color: '#4CAF50'}}>+9.8% net</span><br/>
+                    Diamond: <span style={{color: '#00BCD4'}}>+11.8% net (60% eff)</span> • Diamond+: <span style={{color: '#9C27B0'}}>+21.7% net (100% eff)</span>
                   </div>
                 </div>
               </div>
@@ -3342,14 +3552,14 @@ export default function App() {
                   <p>APR reduces as TVL grows to ensure DAO sustainability:</p>
                   <table className="tokenomics-table">
                     <thead>
-                      <tr><th>TVL Phase</th><th>Multiplier</th><th>Gold APR</th><th>Diamond APR</th></tr>
+                      <tr><th>TVL Phase</th><th>Multiplier</th><th>Gold APR</th><th>Diamond APR</th><th>Diamond+ APR</th></tr>
                     </thead>
                     <tbody>
-                      <tr><td style={{color: '#4CAF50'}}>Genesis (0-50M)</td><td>100%</td><td>18%</td><td style={{fontWeight: '700'}}>50%</td></tr>
-                      <tr><td>Early (50-100M)</td><td>85%</td><td>15.3%</td><td>42.5%</td></tr>
-                      <tr><td style={{color: '#FFC107'}}>Growth (100-200M)</td><td>70%</td><td>12.6%</td><td>35%</td></tr>
-                      <tr><td>Mature (200-350M)</td><td>50%</td><td>9%</td><td>25%</td></tr>
-                      <tr><td style={{color: '#FF5722'}}>Saturated (350-500M)</td><td>35%</td><td>6.3%</td><td>17.5%</td></tr>
+                      <tr><td style={{color: '#4CAF50'}}>Genesis (0-50M)</td><td>100%</td><td>24%</td><td style={{fontWeight: '700'}}>60%</td><td style={{fontWeight: '700', color: '#9C27B0'}}>100%</td></tr>
+                      <tr><td>Early (50-100M)</td><td>85%</td><td>20.4%</td><td>51%</td><td style={{color: '#9C27B0'}}>85%</td></tr>
+                      <tr><td style={{color: '#FFC107'}}>Growth (100-200M)</td><td>70%</td><td>16.8%</td><td>42%</td><td style={{color: '#9C27B0'}}>70%</td></tr>
+                      <tr><td>Mature (200-350M)</td><td>50%</td><td>12%</td><td>30%</td><td style={{color: '#9C27B0'}}>50%</td></tr>
+                      <tr><td style={{color: '#FF5722'}}>Saturated (350-500M)</td><td>35%</td><td>8.4%</td><td>21%</td><td style={{color: '#9C27B0'}}>35%</td></tr>
                     </tbody>
                   </table>
                 </div>
@@ -3474,7 +3684,7 @@ export default function App() {
             <a href={SOCIAL_LINKS.telegram} target="_blank" rel="noopener noreferrer" className="footer-link">Telegram</a>
           </div>
           <div className="footer-divider" />
-          <p className="footer-text">© 2025 DTGC V5 GOLD EDITION • dump.tires • Premium Staking on PulseChain • Diamond Hands Only 💎</p>
+          <p className="footer-text">© 2025 DTGC V14 DIAMOND+ EDITION • dump.tires • Premium Staking on PulseChain • Diamond & Diamond+ LP Tiers 💎✨</p>
         </footer>
       </div>
 
