@@ -3167,7 +3167,7 @@ export default function App() {
             </div>
             <div className="hero-stat">
               <div className="hero-stat-value" style={{color: '#4CAF50'}}>91%</div>
-              <div className="hero-stat-label">Controlled Supply</div>
+              <div className="hero-stat-label">Project Supply</div>
             </div>
           </div>
         </section>
