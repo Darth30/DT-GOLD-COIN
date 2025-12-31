@@ -19,9 +19,9 @@ import {
 /*
     ╔═══════════════════════════════════════════════════════════════╗
     ║                                                               ║
-    ║     🏆 DTGC PREMIUM STAKING PLATFORM V19 DIAMOND+ 🏆         ║
+    ║     🏆 DTGC PREMIUM STAKING PLATFORM V20 DIAMOND+ 🏆         ║
     ║                                                               ║
-    ║     ✦ V19 Gold Paper Tokenomics (82% Project Supply!)         ║
+    ║     ✦ V20 Gold Paper Tokenomics (82% Project Supply!)         ║
     ║     ✦ Diamond (DTGC/PLS) + Diamond+ (DTGC/URMOM) LP Tiers    ║
     ║     ✦ 3% Total Fees • All Tiers Profitable                   ║
     ║     ✦ Gold Supply Dynamics + Live Holder Ticker              ║
@@ -47,7 +47,7 @@ const DTGC_TOKENOMICS = {
   lpLocked: 87000000,        // 8.7% - LP Locked
 };
 
-// V19 PROFITABLE FEE STRUCTURE (Reduced for positive staker ROI)
+// V20 PROFITABLE FEE STRUCTURE (Reduced for positive staker ROI)
 const V5_FEES = {
   // Entry Tax: 1.5% total (reduced from 5%)
   entry: {
@@ -76,7 +76,7 @@ const V5_FEES = {
   },
 };
 
-// V19 PROFITABLE STAKING TIERS (All tiers positive ROI with 3% total fees)
+// V20 PROFITABLE STAKING TIERS (All tiers positive ROI with 3% total fees)
 const V5_STAKING_TIERS = [
   { 
     id: 0, 
@@ -244,7 +244,7 @@ const SUPPLY_WALLETS = {
     address: '0x22289ce7d7B962e804E9C8C6C57D2eD4Ffe0AbFC',
     icon: '🏛️',
     description: 'Staking rewards & governance',
-    expected: 0, // Currently 0 DTGC
+    expected: 500000000, // 500M DTGC (50%)
     color: '#4CAF50',
   },
   dev: {
@@ -252,7 +252,7 @@ const SUPPLY_WALLETS = {
     address: '0x777d7f3ad24832975aec259ab7d7b57be4225abf',
     icon: '👨‍💻',
     description: 'Development & operations',
-    expected: 820829080, // ~820.8M DTGC
+    expected: 320000000, // 320M DTGC (32%)
     color: '#2196F3',
   },
   lpLocked: {
@@ -276,7 +276,7 @@ const SUPPLY_WALLETS = {
     address: null, // Calculated
     icon: '💱',
     description: 'Available for trading',
-    expected: 90000000, // 90M (9%)
+    expected: 93000000, // 93M (9.3%) = 1B - 500M - 320M - 87M
     color: '#FF9800',
   },
 };
@@ -2558,6 +2558,21 @@ export default function App() {
 
   // Fetch live supply dynamics (wallet balances) from PulseChain API
   const fetchSupplyDynamics = useCallback(async () => {
+    // In TESTNET mode, use mock expected values instead of live data
+    if (TESTNET_MODE) {
+      setSupplyDynamics({
+        dao: SUPPLY_WALLETS.dao.expected,
+        dev: SUPPLY_WALLETS.dev.expected,
+        lpLocked: SUPPLY_WALLETS.lpLocked.expected,
+        burned: 0,
+        staked: 0,
+        circulating: DTGC_TOTAL_SUPPLY - SUPPLY_WALLETS.dao.expected - SUPPLY_WALLETS.dev.expected - SUPPLY_WALLETS.lpLocked.expected,
+        lastUpdated: new Date(),
+      });
+      console.log('📊 Testnet mock supply loaded');
+      return;
+    }
+
     try {
       // Fetch DAO Treasury balance
       const daoRes = await fetch(`https://api.scan.pulsechain.com/api/v2/addresses/${SUPPLY_WALLETS.dao.address}/token-balances`);
@@ -2591,7 +2606,7 @@ export default function App() {
         lastUpdated: new Date(),
       });
 
-      console.log('📊 Supply dynamics updated:', { dao: daoDtgc, dev: devDtgc, burned: burnedDtgc });
+      console.log('📊 Live supply dynamics updated:', { dao: daoDtgc, dev: devDtgc, burned: burnedDtgc });
     } catch (err) {
       console.warn('⚠️ Failed to fetch supply dynamics:', err.message);
     }
@@ -3091,7 +3106,7 @@ export default function App() {
         {/* Hero */}
         <section className="hero-section" style={TESTNET_MODE ? {paddingTop: '180px'} : {}}>
           <div className="hero-badge">
-            {TESTNET_MODE ? '🧪 V19 DIAMOND+ EDITION • TESTNET 🧪' : '✦ V19 DIAMOND+ • 82% PROJECT SUPPLY ✦'}
+            {TESTNET_MODE ? '🧪 V20 DIAMOND+ EDITION • TESTNET 🧪' : '✦ V20 DIAMOND+ • 82% PROJECT SUPPLY ✦'}
           </div>
           <h1 className="hero-title gold-text">DTGC STAKING</h1>
           <p className="hero-subtitle">Stake • Earn • Govern • Prosper</p>
@@ -4110,7 +4125,7 @@ export default function App() {
                 gap: '20px',
                 marginBottom: '40px',
               }}>
-                <a href="/docs/DTGC-V19-White-Paper.docx" download style={{
+                <a href="/docs/DTGC-V20-White-Paper.docx" download style={{
                   background: 'linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(184,134,11,0.15) 100%)',
                   border: '2px solid rgba(212,175,55,0.4)',
                   borderRadius: '16px',
@@ -4124,12 +4139,12 @@ export default function App() {
                   <span style={{fontSize: '2.5rem'}}>📄</span>
                   <div>
                     <div style={{fontFamily: 'Cinzel, serif', fontWeight: 700, color: 'var(--gold)', fontSize: '1.1rem'}}>WHITE PAPER</div>
-                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Public Overview • V19</div>
+                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Public Overview • V20</div>
                     <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px'}}>📥 Download .docx</div>
                   </div>
                 </a>
                 
-                <a href="/docs/DTGC-V19-Gold-Paper-DiamondPlus.docx" download style={{
+                <a href="/docs/DTGC-V20-Gold-Paper-DiamondPlus.docx" download style={{
                   background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(184,134,11,0.2) 100%)',
                   border: '2px solid rgba(212,175,55,0.5)',
                   borderRadius: '16px',
@@ -4148,7 +4163,7 @@ export default function App() {
                   </div>
                 </a>
                 
-                <a href="/docs/DTGC-V19-Gold-Paper-Quant.docx" download style={{
+                <a href="/docs/DTGC-V20-Gold-Paper-Quant.docx" download style={{
                   background: 'linear-gradient(135deg, rgba(26,35,126,0.1) 0%, rgba(48,63,159,0.15) 100%)',
                   border: '2px solid rgba(26,35,126,0.4)',
                   borderRadius: '16px',
@@ -4193,7 +4208,7 @@ export default function App() {
                     </tbody>
                   </table>
                   <div className="wp-highlight">
-                    <strong>V19 Tax Structure (Optimized for Staker Profitability):</strong><br/>
+                    <strong>V20 Tax Structure (Optimized for Staker Profitability):</strong><br/>
                     <div style={{marginTop: '8px'}}>
                       <strong style={{color: '#4CAF50'}}>Entry Tax (1.5%):</strong> 0.75% DAO • 0.25% Dev • 0.25% DTGC/URMOM LP • 0.15% DTGC/PLS LP • 0.1% Burn<br/><br/>
                       <strong style={{color: '#4CAF50'}}>Exit Tax (1.5%):</strong> Same breakdown • <strong>Only 3% total fees!</strong><br/><br/>
@@ -4204,7 +4219,7 @@ export default function App() {
               </div>
 
               <div className="wp-card">
-                <h3 className="wp-card-title gold-text">⭐ V19 Staking Tiers (All Profitable!)</h3>
+                <h3 className="wp-card-title gold-text">⭐ V20 Staking Tiers (All Profitable!)</h3>
                 <div className="wp-card-content">
                   <table className="tokenomics-table">
                     <thead>
@@ -4364,7 +4379,7 @@ export default function App() {
             <a href={SOCIAL_LINKS.telegram} target="_blank" rel="noopener noreferrer" className="footer-link">Telegram</a>
           </div>
           <div className="footer-divider" />
-          <p className="footer-text">© 2025 DTGC V19 DIAMOND+ EDITION • dtgc.io • Premium Staking on PulseChain • Diamond & Diamond+ LP Tiers 💎✨</p>
+          <p className="footer-text">© 2025 DTGC V20 DIAMOND+ EDITION • dtgc.io • Premium Staking on PulseChain • Diamond & Diamond+ LP Tiers 💎✨</p>
         </footer>
       </div>
 
