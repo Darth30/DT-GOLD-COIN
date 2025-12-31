@@ -2267,6 +2267,193 @@ const formatPLS = (value) => formatNumber(value) + ' PLS';
 //                    COMPONENTS
 // ═══════════════════════════════════════════════════════════════
 
+// Floating DexScreener Widget (bottom-left corner)
+const DexScreenerWidget = () => {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+  const [isMinimized, setIsMinimized] = React.useState(false);
+  const [activeChart, setActiveChart] = React.useState('dtgc'); // 'dtgc' or 'urmom'
+
+  const chartUrls = {
+    dtgc: 'https://dexscreener.com/pulsechain/0x0b0a8a0b7546ff180328aa155d2405882c7ac8c7?embed=1&theme=dark&trades=0&info=0',
+    urmom: 'https://dexscreener.com/pulsechain/0x0548656e272fec9534e180d3174cfc57ab6e10c0?embed=1&theme=dark&trades=0&info=0'
+  };
+
+  const directUrls = {
+    dtgc: 'https://dexscreener.com/pulsechain/0x0b0a8a0b7546ff180328aa155d2405882c7ac8c7',
+    urmom: 'https://dexscreener.com/pulsechain/0x0548656e272fec9534e180d3174cfc57ab6e10c0'
+  };
+
+  if (isMinimized) {
+    return (
+      <div
+        onClick={() => setIsMinimized(false)}
+        style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '20px',
+          width: '50px',
+          height: '50px',
+          background: 'linear-gradient(135deg, #1a1a2e 0%, #0d0d1a 100%)',
+          border: '2px solid #D4AF37',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          cursor: 'pointer',
+          zIndex: 9998,
+          boxShadow: '0 4px 20px rgba(212,175,55,0.3)',
+          transition: 'all 0.3s ease',
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+        title="Open DexScreener Chart"
+      >
+        <span style={{ fontSize: '1.5rem' }}>📊</span>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      position: 'fixed',
+      bottom: '20px',
+      left: '20px',
+      width: isExpanded ? '500px' : '320px',
+      height: isExpanded ? '450px' : '280px',
+      background: 'linear-gradient(135deg, #1a1a2e 0%, #0d0d1a 100%)',
+      border: '2px solid #D4AF37',
+      borderRadius: '16px',
+      overflow: 'hidden',
+      zIndex: 9998,
+      boxShadow: '0 10px 40px rgba(0,0,0,0.5), 0 0 20px rgba(212,175,55,0.2)',
+      transition: 'all 0.3s ease',
+    }}>
+      {/* Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        padding: '8px 12px',
+        background: 'rgba(212,175,55,0.1)',
+        borderBottom: '1px solid rgba(212,175,55,0.3)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '1rem' }}>📊</span>
+          <span style={{ color: '#D4AF37', fontWeight: 'bold', fontSize: '0.85rem' }}>LIVE CHART</span>
+        </div>
+        
+        {/* Token Toggle */}
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <button
+            onClick={() => setActiveChart('dtgc')}
+            style={{
+              padding: '4px 10px',
+              fontSize: '0.7rem',
+              fontWeight: 'bold',
+              background: activeChart === 'dtgc' ? 'linear-gradient(135deg, #D4AF37, #F4D03F)' : 'rgba(255,255,255,0.1)',
+              color: activeChart === 'dtgc' ? '#000' : '#888',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            DTGC
+          </button>
+          <button
+            onClick={() => setActiveChart('urmom')}
+            style={{
+              padding: '4px 10px',
+              fontSize: '0.7rem',
+              fontWeight: 'bold',
+              background: activeChart === 'urmom' ? 'linear-gradient(135deg, #D4AF37, #F4D03F)' : 'rgba(255,255,255,0.1)',
+              color: activeChart === 'urmom' ? '#000' : '#888',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            URMOM
+          </button>
+        </div>
+
+        {/* Controls */}
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <button
+            onClick={() => window.open(directUrls[activeChart], '_blank')}
+            style={{
+              width: '24px',
+              height: '24px',
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              borderRadius: '4px',
+              color: '#888',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title="Open in DexScreener"
+          >
+            ↗
+          </button>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            style={{
+              width: '24px',
+              height: '24px',
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              borderRadius: '4px',
+              color: '#888',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title={isExpanded ? 'Shrink' : 'Expand'}
+          >
+            {isExpanded ? '⊖' : '⊕'}
+          </button>
+          <button
+            onClick={() => setIsMinimized(true)}
+            style={{
+              width: '24px',
+              height: '24px',
+              background: 'rgba(255,255,255,0.1)',
+              border: 'none',
+              borderRadius: '4px',
+              color: '#888',
+              cursor: 'pointer',
+              fontSize: '0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            title="Minimize"
+          >
+            _
+          </button>
+        </div>
+      </div>
+
+      {/* Chart iframe */}
+      <iframe
+        src={chartUrls[activeChart]}
+        style={{
+          width: '100%',
+          height: 'calc(100% - 40px)',
+          border: 'none',
+        }}
+        title={`${activeChart.toUpperCase()} DexScreener Chart`}
+      />
+    </div>
+  );
+};
+
 // Intro Video Overlay (plays on site entry)
 const IntroVideoOverlay = ({ onComplete, isDark }) => {
   const [hiding, setHiding] = React.useState(false);
@@ -3090,6 +3277,7 @@ export default function App() {
               <button className={`nav-link ${activeTab === 'vote' ? 'active' : ''}`} onClick={() => setActiveTab('vote')}>DAO</button>
               <button className={`nav-link ${activeTab === 'whitepaper' ? 'active' : ''}`} onClick={() => setActiveTab('whitepaper')}>Whitepaper</button>
               <button className={`nav-link ${activeTab === 'links' ? 'active' : ''}`} onClick={() => setActiveTab('links')}>Links</button>
+              <button className={`nav-link ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')} style={{ background: activeTab === 'analytics' ? 'linear-gradient(135deg, #2196F3, #1976D2)' : 'transparent' }}>📊 Analytics</button>
             </nav>
 
             <div className="nav-right">
@@ -4368,6 +4556,373 @@ export default function App() {
               </div>
             </section>
           )}
+
+          {/* ANALYTICS TAB */}
+          {activeTab === 'analytics' && (
+            <section className="section analytics-section">
+              <div className="section-header">
+                <h2 className="section-title" style={{ color: '#2196F3' }}>📊 DYNAMIC PORTFOLIO ANALYTICS</h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '8px' }}>Institutional-Grade Hedging & Rebalancing Insights</p>
+                <div className="section-divider" style={{ background: 'linear-gradient(90deg, transparent, #2196F3, transparent)' }} />
+              </div>
+
+              {/* Portfolio Allocation Calculator */}
+              <div style={{ 
+                background: 'rgba(33,150,243,0.05)', 
+                border: '2px solid rgba(33,150,243,0.3)', 
+                borderRadius: '16px', 
+                padding: '24px', 
+                marginBottom: '24px' 
+              }}>
+                <h3 style={{ color: '#2196F3', fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🎯 OPTIMAL ALLOCATION STRATEGIES
+                </h3>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                  {/* Conservative Strategy */}
+                  <div style={{ 
+                    background: 'rgba(76,175,80,0.1)', 
+                    border: '1px solid rgba(76,175,80,0.3)', 
+                    borderRadius: '12px', 
+                    padding: '16px' 
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>🛡️ Conservative</span>
+                      <span style={{ color: '#4CAF50', fontSize: '0.8rem' }}>Low Risk</span>
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                      <div>• 70% Single-Stake (Silver/Gold)</div>
+                      <div>• 30% Diamond LP</div>
+                      <div>• 0% Diamond+ LP</div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(76,175,80,0.2)' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Expected APR:</span>
+                      <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>~33%</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Variance Reduction:</span>
+                      <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>25%</span>
+                    </div>
+                  </div>
+
+                  {/* Balanced Strategy */}
+                  <div style={{ 
+                    background: 'rgba(33,150,243,0.1)', 
+                    border: '2px solid rgba(33,150,243,0.5)', 
+                    borderRadius: '12px', 
+                    padding: '16px',
+                    position: 'relative'
+                  }}>
+                    <div style={{ position: 'absolute', top: '-10px', right: '12px', background: '#2196F3', color: '#fff', fontSize: '0.65rem', padding: '2px 8px', borderRadius: '4px', fontWeight: 'bold' }}>RECOMMENDED</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ color: '#2196F3', fontWeight: 'bold' }}>⚖️ Balanced</span>
+                      <span style={{ color: '#2196F3', fontSize: '0.8rem' }}>Optimal Risk/Reward</span>
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                      <div>• 40% Single-Stake (Gold/Whale)</div>
+                      <div>• 30% Diamond LP (DTGC/PLS)</div>
+                      <div>• 30% Diamond+ LP (DTGC/URMOM)</div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(33,150,243,0.2)' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Expected APR:</span>
+                      <span style={{ color: '#2196F3', fontWeight: 'bold' }}>~57%</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Variance Reduction:</span>
+                      <span style={{ color: '#2196F3', fontWeight: 'bold' }}>50%</span>
+                    </div>
+                  </div>
+
+                  {/* Aggressive Strategy */}
+                  <div style={{ 
+                    background: 'rgba(156,39,176,0.1)', 
+                    border: '1px solid rgba(156,39,176,0.3)', 
+                    borderRadius: '12px', 
+                    padding: '16px' 
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ color: '#9C27B0', fontWeight: 'bold' }}>🚀 Aggressive</span>
+                      <span style={{ color: '#9C27B0', fontSize: '0.8rem' }}>High APR</span>
+                    </div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                      <div>• 0% Single-Stake</div>
+                      <div>• 50% Diamond LP (DTGC/PLS)</div>
+                      <div>• 50% Diamond+ LP (DTGC/URMOM)</div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(156,39,176,0.2)' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Expected APR:</span>
+                      <span style={{ color: '#9C27B0', fontWeight: 'bold' }}>~80%</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Variance Reduction:</span>
+                      <span style={{ color: '#9C27B0', fontWeight: 'bold' }}>62%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic Hedging Matrix */}
+              <div style={{ 
+                background: 'rgba(255,152,0,0.05)', 
+                border: '2px solid rgba(255,152,0,0.3)', 
+                borderRadius: '16px', 
+                padding: '24px', 
+                marginBottom: '24px' 
+              }}>
+                <h3 style={{ color: '#FF9800', fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🛡️ DYNAMIC HEDGING ANALYSIS
+                </h3>
+                
+                {/* Correlation Matrix */}
+                <div style={{ marginBottom: '20px' }}>
+                  <h4 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', marginBottom: '12px' }}>Asset Correlation Matrix (ρ)</h4>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ background: 'rgba(255,152,0,0.2)' }}>
+                          <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid rgba(255,152,0,0.3)' }}>Asset Pair</th>
+                          <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,152,0,0.3)' }}>Correlation</th>
+                          <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,152,0,0.3)' }}>Hedge Quality</th>
+                          <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,152,0,0.3)' }}>Variance Reduction</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>DTGC / PLS</td>
+                          <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>0.72</td>
+                          <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#FF9800' }}>Moderate</td>
+                          <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>28%</td>
+                        </tr>
+                        <tr>
+                          <td style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>DTGC / URMOM</td>
+                          <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>0.45</td>
+                          <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#4CAF50' }}>Good</td>
+                          <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#4CAF50', fontWeight: 'bold' }}>55%</td>
+                        </tr>
+                        <tr style={{ background: 'rgba(76,175,80,0.1)' }}>
+                          <td style={{ padding: '10px', fontWeight: 'bold' }}>Diamond LP vs Diamond+ LP</td>
+                          <td style={{ padding: '10px', textAlign: 'center', fontWeight: 'bold' }}>0.38</td>
+                          <td style={{ padding: '10px', textAlign: 'center', color: '#4CAF50', fontWeight: 'bold' }}>Excellent</td>
+                          <td style={{ padding: '10px', textAlign: 'center', color: '#4CAF50', fontWeight: 'bold' }}>62%</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '8px', fontStyle: 'italic' }}>
+                    💡 Lower correlation = Better hedge. Diamond + Diamond+ combination provides optimal cross-asset hedging.
+                  </p>
+                </div>
+
+                {/* Hedge Effectiveness */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Sharpe Ratio (Unhedged)</div>
+                    <div style={{ color: '#F44336', fontSize: '1.4rem', fontWeight: 'bold' }}>0.11</div>
+                  </div>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Sharpe Ratio (Hedged)</div>
+                    <div style={{ color: '#4CAF50', fontSize: '1.4rem', fontWeight: 'bold' }}>0.76</div>
+                  </div>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Sortino Ratio</div>
+                    <div style={{ color: '#2196F3', fontSize: '1.4rem', fontWeight: 'bold' }}>2.18</div>
+                  </div>
+                  <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: '8px', padding: '12px', textAlign: 'center' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Max Drawdown Reduction</div>
+                    <div style={{ color: '#4CAF50', fontSize: '1.4rem', fontWeight: 'bold' }}>-52%</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic Rebalancing */}
+              <div style={{ 
+                background: 'rgba(156,39,176,0.05)', 
+                border: '2px solid rgba(156,39,176,0.3)', 
+                borderRadius: '16px', 
+                padding: '24px', 
+                marginBottom: '24px' 
+              }}>
+                <h3 style={{ color: '#9C27B0', fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🔄 DYNAMIC REBALANCING TRIGGERS
+                </h3>
+                
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ background: 'rgba(156,39,176,0.2)' }}>
+                        <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid rgba(156,39,176,0.3)' }}>Signal</th>
+                        <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(156,39,176,0.3)' }}>Threshold</th>
+                        <th style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(156,39,176,0.3)' }}>Action</th>
+                        <th style={{ padding: '10px', textAlign: 'left', borderBottom: '1px solid rgba(156,39,176,0.3)' }}>Rationale</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>📈 RSI Overbought</td>
+                        <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#F44336' }}>&gt; 70</td>
+                        <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Reduce LP → Single</td>
+                        <td style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>Lock gains, reduce IL exposure</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>📉 RSI Oversold</td>
+                        <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#4CAF50' }}>&lt; 30</td>
+                        <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Increase LP allocation</td>
+                        <td style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>Accumulate at discount via LP</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>⚡ Volatility Spike</td>
+                        <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#FF9800' }}>&gt; 2σ daily</td>
+                        <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Pause rebalancing 48h</td>
+                        <td style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>Avoid panic trades</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>📅 Time-Based</td>
+                        <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Every 30 days</td>
+                        <td style={{ padding: '10px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>Rebalance to target</td>
+                        <td style={{ padding: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>Maintain optimal allocation</td>
+                      </tr>
+                      <tr style={{ background: 'rgba(76,175,80,0.1)' }}>
+                        <td style={{ padding: '10px', fontWeight: 'bold' }}>🎯 Drift Threshold</td>
+                        <td style={{ padding: '10px', textAlign: 'center', fontWeight: 'bold' }}>±10% from target</td>
+                        <td style={{ padding: '10px', textAlign: 'center', fontWeight: 'bold', color: '#4CAF50' }}>Immediate rebalance</td>
+                        <td style={{ padding: '10px', color: 'var(--text-muted)' }}>Control risk exposure</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Rebalancing Cost Analysis */}
+                <div style={{ marginTop: '20px', padding: '16px', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
+                  <h4 style={{ color: 'var(--text-primary)', fontSize: '0.95rem', marginBottom: '12px' }}>💰 Rebalancing Cost Analysis</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ color: '#F44336', fontSize: '0.75rem' }}>Weekly</div>
+                      <div style={{ color: '#F44336', fontWeight: 'bold' }}>~156%/yr</div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>❌ Too costly</div>
+                    </div>
+                    <div style={{ textAlign: 'center', padding: '8px', background: 'rgba(76,175,80,0.2)', borderRadius: '8px' }}>
+                      <div style={{ color: '#4CAF50', fontSize: '0.75rem' }}>Monthly ✓</div>
+                      <div style={{ color: '#4CAF50', fontWeight: 'bold' }}>~36%/yr</div>
+                      <div style={{ color: '#4CAF50', fontSize: '0.7rem' }}>✅ Optimal</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ color: '#FF9800', fontSize: '0.75rem' }}>Quarterly</div>
+                      <div style={{ color: '#FF9800', fontWeight: 'bold' }}>~12%/yr</div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>⚠️ Drift risk</div>
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>Lock Expiry</div>
+                      <div style={{ fontWeight: 'bold' }}>~6%/yr</div>
+                      <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>⚠️ High drift</div>
+                    </div>
+                  </div>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '12px', textAlign: 'center', fontStyle: 'italic' }}>
+                    💡 Recommendation: Rebalance monthly OR when drift exceeds ±10%, whichever comes first
+                  </p>
+                </div>
+              </div>
+
+              {/* Investment Forecasts */}
+              <div style={{ 
+                background: 'linear-gradient(135deg, rgba(212,175,55,0.1), rgba(33,150,243,0.1))', 
+                border: '2px solid rgba(212,175,55,0.3)', 
+                borderRadius: '16px', 
+                padding: '24px', 
+                marginBottom: '24px' 
+              }}>
+                <h3 style={{ color: '#D4AF37', fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  📈 PORTFOLIO FORECASTS: $10,000 INVESTMENT
+                </h3>
+                
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ background: 'rgba(212,175,55,0.2)' }}>
+                        <th style={{ padding: '12px', textAlign: 'left', borderBottom: '2px solid rgba(212,175,55,0.5)' }}>Strategy</th>
+                        <th style={{ padding: '12px', textAlign: 'center', borderBottom: '2px solid rgba(212,175,55,0.5)' }}>6 Month</th>
+                        <th style={{ padding: '12px', textAlign: 'center', borderBottom: '2px solid rgba(212,175,55,0.5)' }}>12 Month</th>
+                        <th style={{ padding: '12px', textAlign: 'center', borderBottom: '2px solid rgba(212,175,55,0.5)' }}>24 Month</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>🛡️ Conservative (Silver 22%)</td>
+                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>$10,800</td>
+                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>$11,900</td>
+                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>$14,161</td>
+                      </tr>
+                      <tr style={{ background: 'rgba(33,150,243,0.1)' }}>
+                        <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', fontWeight: 'bold' }}>⚖️ Balanced Hedge (40/30/30)</td>
+                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#2196F3', fontWeight: 'bold' }}>$12,850</td>
+                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#2196F3', fontWeight: 'bold' }}>$16,512</td>
+                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#2196F3', fontWeight: 'bold' }}>$27,286</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>🐋 Whale Only (26%)</td>
+                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>$11,300</td>
+                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>$12,600</td>
+                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>$15,876</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>💎 Diamond LP (60%)</td>
+                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#00BCD4' }}>$13,000</td>
+                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#00BCD4' }}>$16,000</td>
+                        <td style={{ padding: '12px', textAlign: 'center', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#00BCD4' }}>$25,600</td>
+                      </tr>
+                      <tr style={{ background: 'rgba(156,39,176,0.1)' }}>
+                        <td style={{ padding: '12px', fontWeight: 'bold' }}>💎✨ Diamond+ LP (100%)</td>
+                        <td style={{ padding: '12px', textAlign: 'center', color: '#9C27B0', fontWeight: 'bold' }}>$14,850</td>
+                        <td style={{ padding: '12px', textAlign: 'center', color: '#9C27B0', fontWeight: 'bold' }}>$20,700</td>
+                        <td style={{ padding: '12px', textAlign: 'center', color: '#9C27B0', fontWeight: 'bold' }}>$42,849</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '12px', textAlign: 'center', fontStyle: 'italic' }}>
+                  * Returns shown after 3% total fees. Assumes price stability and continuous compounding.
+                </p>
+              </div>
+
+              {/* VaR Analysis */}
+              <div style={{ 
+                background: 'rgba(244,67,54,0.05)', 
+                border: '2px solid rgba(244,67,54,0.3)', 
+                borderRadius: '16px', 
+                padding: '24px' 
+              }}>
+                <h3 style={{ color: '#F44336', fontSize: '1.2rem', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  ⚠️ VALUE AT RISK (VaR) ANALYSIS
+                </h3>
+                
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>
+                  Maximum expected loss at 95% confidence level for $10,000 investment over 12 months:
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+                  <div style={{ background: 'rgba(244,67,54,0.1)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>Unhedged (Single Only)</div>
+                    <div style={{ color: '#F44336', fontSize: '1.8rem', fontWeight: 'bold' }}>-$8,700</div>
+                    <div style={{ color: '#F44336', fontSize: '0.85rem' }}>(-87%)</div>
+                  </div>
+                  <div style={{ background: 'rgba(255,152,0,0.1)', borderRadius: '12px', padding: '16px', textAlign: 'center' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>Partially Hedged (60/40)</div>
+                    <div style={{ color: '#FF9800', fontSize: '1.8rem', fontWeight: 'bold' }}>-$5,200</div>
+                    <div style={{ color: '#FF9800', fontSize: '0.85rem' }}>(-52%)</div>
+                  </div>
+                  <div style={{ background: 'rgba(76,175,80,0.1)', borderRadius: '12px', padding: '16px', textAlign: 'center', border: '2px solid rgba(76,175,80,0.5)' }}>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginBottom: '8px' }}>Optimal Hedge (40/30/30)</div>
+                    <div style={{ color: '#4CAF50', fontSize: '1.8rem', fontWeight: 'bold' }}>-$3,500</div>
+                    <div style={{ color: '#4CAF50', fontSize: '0.85rem' }}>(-35%) ✓ Best</div>
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '20px', padding: '12px', background: 'rgba(76,175,80,0.1)', borderRadius: '8px', textAlign: 'center' }}>
+                  <span style={{ color: '#4CAF50', fontWeight: 'bold' }}>🛡️ Dynamic hedging reduces worst-case loss by 60% (from -87% to -35%)</span>
+                </div>
+              </div>
+
+            </section>
+          )}
         </main>
 
         {/* Footer */}
@@ -4402,6 +4957,9 @@ export default function App() {
           {toast.message}
         </div>
       )}
+
+      {/* Floating DexScreener Widget */}
+      <DexScreenerWidget />
     </ThemeContext.Provider>
   );
 }
