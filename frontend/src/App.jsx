@@ -244,7 +244,7 @@ const SUPPLY_WALLETS = {
     address: '0x22289ce7d7B962e804E9C8C6C57D2eD4Ffe0AbFC',
     icon: '🏛️',
     description: 'Staking rewards & governance',
-    expected: 0, // Currently 0 DTGC
+    expected: 500000000, // 500M DTGC (TESTNET)
     color: '#4CAF50',
   },
   dev: {
@@ -252,7 +252,7 @@ const SUPPLY_WALLETS = {
     address: '0x777d7f3ad24832975aec259ab7d7b57be4225abf',
     icon: '👨‍💻',
     description: 'Development & operations',
-    expected: 820829080, // ~820.8M DTGC
+    expected: 323000000, // 323M DTGC (TESTNET)
     color: '#2196F3',
   },
   lpLocked: {
