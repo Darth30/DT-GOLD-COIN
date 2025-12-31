@@ -279,28 +279,45 @@ const SUPPLY_WALLETS = {
 };
 
 // ═══════════════════════════════════════════════════════════════
-//                    DTGC HOLDER WALLETS TICKER
+//                    DTGC HOLDER WALLETS TICKER (LIVE API)
 // ═══════════════════════════════════════════════════════════════
-// These are tracked holder wallets (excluding DAO/Dev) for the live ticker
-// Replace with actual holder addresses from PulseChain explorer
+// Fetches live holder data from PulseChain Explorer API
+
+const DTGC_TOKEN_ADDRESS = '0x146a6F852D2B9a24e1078e6D2f86486D1C09165e';
+
+// PulseChain Explorer API (Blockscout-compatible)
+const PULSECHAIN_API = {
+  // Primary: scan.pulsechain.com API
+  holders: `https://scan.pulsechain.com/api/v2/tokens/${DTGC_TOKEN_ADDRESS}/holders`,
+  // Alternative: direct RPC for balance checks
+  rpc: 'https://rpc.pulsechain.com',
+};
+
+// Wallets to EXCLUDE from ticker (DAO, Dev, LP, Burn addresses)
+const EXCLUDED_WALLETS = [
+  '0x22289ce7d7B962e804E9C8C6C57D2eD4Ffe0AbFC', // DAO Treasury
+  '0x0000000000000000000000000000000000000369', // Burn address
+  '0x000000000000000000000000000000000000dEaD', // Dead address
+  '0x0000000000000000000000000000000000000000', // Zero address
+  '0x1891bD6A959B32977c438f3022678a8659364A72', // LP Pool DTGC/URMOM
+  '0x0b0a8a0b7546ff180328aa155d2405882c7ac8c7', // LP Pool DTGC/PLS
+  // Add any other DAO/Dev wallets to exclude here
+].map(addr => addr.toLowerCase());
+
+// Fallback data if API fails (placeholder)
 const HOLDER_WALLETS = [
-  { address: '0x1234...5678', balance: 2500000, label: 'Whale 1' },
-  { address: '0x2345...6789', balance: 1800000, label: 'Whale 2' },
-  { address: '0x3456...7890', balance: 1200000, label: 'Whale 3' },
-  { address: '0x4567...8901', balance: 950000, label: 'Diamond Hand' },
-  { address: '0x5678...9012', balance: 750000, label: 'Staker 1' },
-  { address: '0x6789...0123', balance: 620000, label: 'Staker 2' },
-  { address: '0x7890...1234', balance: 510000, label: 'Holder 1' },
-  { address: '0x8901...2345', balance: 480000, label: 'Holder 2' },
-  { address: '0x9012...3456', balance: 350000, label: 'Holder 3' },
-  { address: '0x0123...4567', balance: 290000, label: 'Holder 4' },
-  { address: '0xABCD...EF01', balance: 220000, label: 'Holder 5' },
-  { address: '0xBCDE...F012', balance: 185000, label: 'Holder 6' },
-  { address: '0xCDEF...0123', balance: 150000, label: 'Holder 7' },
-  { address: '0xDEF0...1234', balance: 120000, label: 'Holder 8' },
-  { address: '0xEF01...2345', balance: 95000, label: 'Holder 9' },
-  { address: '0xF012...3456', balance: 72000, label: 'Holder 10' },
+  { address: '0x7a3B...9F2e', balance: 2500000, label: 'Loading...' },
+  { address: '0x4cD1...8A3b', balance: 1800000, label: 'Loading...' },
+  { address: '0x9eF2...3C4d', balance: 1200000, label: 'Loading...' },
+  { address: '0x2aB5...7E8f', balance: 950000, label: 'Loading...' },
+  { address: '0x6cD9...1A2b', balance: 750000, label: 'Loading...' },
 ];
+
+// Helper to shorten address for display
+const shortenAddress = (addr) => {
+  if (!addr || addr.length < 10) return addr;
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+};
     { name: 'URMOM/pHEX', address: '0x6Bd31Cdc8c87F3bE93bEaC2E4F58DAeEf1f7905e' },
     { name: 'URMOM/INC', address: '0xc8EC3c754B259fB7503072058A71d00cc20121DF' },
   ],
@@ -2495,6 +2512,10 @@ export default function App() {
   const [stakedPositions, setStakedPositions] = useState([]);
   const [contractStats, setContractStats] = useState({ totalStaked: '0', stakers: '0' });
 
+  // Live holder wallets for ticker (fetched from PulseChain API)
+  const [liveHolders, setLiveHolders] = useState(HOLDER_WALLETS);
+  const [holdersLoading, setHoldersLoading] = useState(true);
+
   const [canVote, setCanVote] = useState(false);
   const [selectedVote, setSelectedVote] = useState(null);
 
@@ -2525,11 +2546,72 @@ export default function App() {
     lastUpdated: null,
   });
 
+  // Live holder wallets from PulseChain API
+  const [liveHolders, setLiveHolders] = useState({
+    holders: FALLBACK_HOLDERS,
+    loading: true,
+    lastUpdated: null,
+    error: null,
+  });
+
   // Toast notification helper - defined early so all callbacks can use it
   const showToast = (message, type) => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4000);
   };
+
+  // Fetch live holder data from PulseChain Explorer API
+  const fetchLiveHolders = useCallback(async () => {
+    try {
+      const response = await fetch(PULSECHAIN_API.holders);
+      
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+      
+      const data = await response.json();
+      
+      // Process holders - filter out excluded wallets (DAO, Dev, LP, Burn)
+      const holders = (data.items || [])
+        .filter(item => !EXCLUDED_WALLETS.includes(item.address?.hash?.toLowerCase()))
+        .slice(0, 20) // Top 20 holders
+        .map((item, index) => ({
+          address: `${item.address?.hash?.slice(0, 6)}...${item.address?.hash?.slice(-4)}`,
+          fullAddress: item.address?.hash,
+          balance: parseFloat(item.value) / 1e18, // Convert from wei
+          label: index < 3 ? `Whale ${index + 1}` : 
+                 index < 6 ? `Diamond ${index - 2}` : 
+                 `Holder ${index - 5}`,
+        }));
+
+      if (holders.length > 0) {
+        setLiveHolders({
+          holders,
+          loading: false,
+          lastUpdated: new Date(),
+          error: null,
+        });
+        console.log('📊 Live holders updated:', holders.length, 'wallets');
+      } else {
+        throw new Error('No holder data received');
+      }
+    } catch (err) {
+      console.warn('⚠️ Holder API error, using fallback:', err.message);
+      setLiveHolders(prev => ({
+        ...prev,
+        holders: prev.holders.length > 0 ? prev.holders : FALLBACK_HOLDERS,
+        loading: false,
+        error: err.message,
+      }));
+    }
+  }, []);
+
+  // Fetch holders on mount and every 2 minutes
+  useEffect(() => {
+    fetchLiveHolders();
+    const interval = setInterval(fetchLiveHolders, 120000); // 2 minutes
+    return () => clearInterval(interval);
+  }, [fetchLiveHolders]);
 
   // Fetch live prices from DexScreener
   const fetchLivePrices = useCallback(async () => {
@@ -2621,6 +2703,51 @@ export default function App() {
   // Calculate live burn value
   const liveBurnedUSD = (BURN_STATS.totalDeadWallet * livePrices.urmom).toFixed(2);
   const liveLPBurnedUSD = (totalLPUrmom * livePrices.urmom).toFixed(2);
+
+  // Fetch live holder data from PulseChain Explorer API
+  const fetchLiveHolders = useCallback(async () => {
+    setHoldersLoading(true);
+    try {
+      // Fetch from PulseChain Blockscout API
+      const response = await fetch(PULSECHAIN_API.holders);
+      
+      if (!response.ok) {
+        throw new Error('API request failed');
+      }
+      
+      const data = await response.json();
+      
+      // Process holders - filter out excluded wallets
+      if (data.items && Array.isArray(data.items)) {
+        const filteredHolders = data.items
+          .filter(holder => !EXCLUDED_WALLETS.includes(holder.address?.hash?.toLowerCase()))
+          .slice(0, 20) // Top 20 holders
+          .map((holder, index) => ({
+            address: shortenAddress(holder.address?.hash || ''),
+            fullAddress: holder.address?.hash || '',
+            balance: parseFloat(holder.value) / 1e18, // Convert from wei
+            label: `Rank #${index + 1}`,
+          }));
+        
+        if (filteredHolders.length > 0) {
+          setLiveHolders(filteredHolders);
+          console.log('📊 Live holders updated:', filteredHolders.length, 'wallets');
+        }
+      }
+    } catch (err) {
+      console.warn('⚠️ Could not fetch live holders, using fallback:', err.message);
+      // Keep fallback data
+    } finally {
+      setHoldersLoading(false);
+    }
+  }, []);
+
+  // Fetch holders on mount and every 5 minutes
+  useEffect(() => {
+    fetchLiveHolders();
+    const interval = setInterval(fetchLiveHolders, 5 * 60 * 1000); // 5 minutes
+    return () => clearInterval(interval);
+  }, [fetchLiveHolders]);
 
   // Initialize testnet balances
   const initTestnetBalances = useCallback(() => {
@@ -2970,6 +3097,16 @@ export default function App() {
           </div>
           <h1 className="hero-title gold-text">DTGC STAKING</h1>
           <p className="hero-subtitle">Stake • Earn • Govern • Prosper</p>
+          <p style={{
+            fontSize: '0.7rem',
+            color: '#888',
+            letterSpacing: '1px',
+            marginTop: '-10px',
+            marginBottom: '20px',
+            textTransform: 'uppercase'
+          }}>
+            A pump.tires contract, unique decentralized staking mechanism, on PulseChain
+          </p>
           
           {/* Testnet Balance Display */}
           {TESTNET_MODE && account && testnetBalances && (
@@ -3059,7 +3196,7 @@ export default function App() {
                 marginBottom: '8px',
                 textTransform: 'uppercase'
               }}>
-                dump.tires unique decentralized staking mechanism
+                A pump.tires contract, unique decentralized staking mechanism, on PulseChain
               </div>
               <h3 style={{ 
                 fontSize: '1.5rem', 
@@ -3337,13 +3474,36 @@ export default function App() {
                 textAlign: 'center', 
                 marginBottom: '6px',
                 letterSpacing: '1px',
-                textTransform: 'uppercase'
+                textTransform: 'uppercase',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
               }}>
                 📊 Top Holder Wallets (Excluding DAO/Dev) • Hover to Pause
+                {holdersLoading ? (
+                  <span style={{ color: '#FF9800' }}>⏳ Loading...</span>
+                ) : (
+                  <span style={{ 
+                    display: 'inline-flex', 
+                    alignItems: 'center', 
+                    gap: '4px',
+                    color: '#4CAF50' 
+                  }}>
+                    <span style={{ 
+                      width: '6px', 
+                      height: '6px', 
+                      borderRadius: '50%', 
+                      background: '#4CAF50',
+                      animation: 'pulse 2s infinite'
+                    }} />
+                    LIVE
+                  </span>
+                )}
               </div>
               <div className="ticker-track">
                 {/* First set of items */}
-                {HOLDER_WALLETS.map((wallet, index) => (
+                {liveHolders.map((wallet, index) => (
                   <div key={`a-${index}`} className="ticker-item">
                     <span className="ticker-address">{wallet.address}</span>
                     <span className="ticker-balance">{formatNumber(wallet.balance)} DTGC</span>
@@ -3351,7 +3511,7 @@ export default function App() {
                   </div>
                 ))}
                 {/* Duplicate for seamless loop */}
-                {HOLDER_WALLETS.map((wallet, index) => (
+                {liveHolders.map((wallet, index) => (
                   <div key={`b-${index}`} className="ticker-item">
                     <span className="ticker-address">{wallet.address}</span>
                     <span className="ticker-balance">{formatNumber(wallet.balance)} DTGC</span>
@@ -3365,7 +3525,7 @@ export default function App() {
                 textAlign: 'center', 
                 marginTop: '6px'
               }}>
-                Total Tracked: {formatNumber(HOLDER_WALLETS.reduce((sum, w) => sum + w.balance, 0))} DTGC • {HOLDER_WALLETS.length} Wallets
+                Total Tracked: {formatNumber(liveHolders.reduce((sum, w) => sum + w.balance, 0))} DTGC • {liveHolders.length} Wallets
               </div>
             </div>
           </div>
@@ -4205,4 +4365,3 @@ export default function App() {
     </ThemeContext.Provider>
   );
 }
-
