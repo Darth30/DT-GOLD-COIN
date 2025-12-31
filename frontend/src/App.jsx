@@ -19,9 +19,9 @@ import {
 /*
     ╔═══════════════════════════════════════════════════════════════╗
     ║                                                               ║
-    ║     🏆 DTGC PREMIUM STAKING PLATFORM V17 DIAMOND+ 🏆         ║
+    ║     🏆 DTGC PREMIUM STAKING PLATFORM V18 DIAMOND+ 🏆         ║
     ║                                                               ║
-    ║     ✦ V17 Gold Paper Tokenomics (91% Controlled!)            ║
+    ║     ✦ V18 Gold Paper Tokenomics (82% Project Supply!)         ║
     ║     ✦ Diamond (DTGC/PLS) + Diamond+ (DTGC/URMOM) LP Tiers    ║
     ║     ✦ 3% Total Fees • All Tiers Profitable                   ║
     ║     ✦ Gold Supply Dynamics + Live Holder Ticker              ║
@@ -36,7 +36,7 @@ import {
 // ═══════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════
-//                    V5 GOLD PAPER TOKENOMICS (91% CONTROLLED)
+//                    V5 GOLD PAPER TOKENOMICS (82% PROJECT SUPPLY)
 // ═══════════════════════════════════════════════════════════════
 
 const DTGC_TOKENOMICS = {
@@ -47,7 +47,7 @@ const DTGC_TOKENOMICS = {
   lpLocked: 87000000,        // 8.7% - LP Locked
 };
 
-// V17 PROFITABLE FEE STRUCTURE (Reduced for positive staker ROI)
+// V18 PROFITABLE FEE STRUCTURE (Reduced for positive staker ROI)
 const V5_FEES = {
   // Entry Tax: 1.5% total (reduced from 5%)
   entry: {
@@ -76,7 +76,7 @@ const V5_FEES = {
   },
 };
 
-// V17 PROFITABLE STAKING TIERS (All tiers positive ROI with 3% total fees)
+// V18 PROFITABLE STAKING TIERS (All tiers positive ROI with 3% total fees)
 const V5_STAKING_TIERS = [
   { 
     id: 0, 
@@ -240,24 +240,24 @@ const DTGC_TOTAL_SUPPLY = 1000000000; // 1 Billion
 
 const SUPPLY_WALLETS = {
   dao: {
-    name: 'DAO Rewards Pool',
-    address: '0x0000000000000000000000000000000000000000', // Replace with actual
+    name: 'DAO Treasury',
+    address: '0x22289ce7d7B962e804E9C8C6C57D2eD4Ffe0AbFC',
     icon: '🏛️',
     description: 'Staking rewards & governance',
-    expected: 500000000, // 500M (50%)
+    expected: 0, // Currently 0 DTGC
     color: '#4CAF50',
   },
   dev: {
     name: 'Dev Wallet',
-    address: '0x0000000000000000000000000000000000000000', // Replace with actual
+    address: '0x777d7f3ad24832975aec259ab7d7b57be4225abf',
     icon: '👨‍💻',
     description: 'Development & operations',
-    expected: 323000000, // 323M (32.3%)
+    expected: 820829080, // ~820.8M DTGC
     color: '#2196F3',
   },
   lpLocked: {
     name: 'LP Locked',
-    address: '0x0000000000000000000000000000000000000000', // Replace with actual
+    address: '0x0b0a8a0b7546ff180328aa155d2405882c7ac8c7', // DTGC/PLS LP
     icon: '🔒',
     description: 'Liquidity pool locked',
     expected: 87000000, // 87M (8.7%)
@@ -299,12 +299,12 @@ const PULSECHAIN_API = {
 // Wallets to EXCLUDE from ticker (DAO, Dev, LP, Burn addresses)
 const EXCLUDED_WALLETS = [
   '0x22289ce7d7B962e804E9C8C6C57D2eD4Ffe0AbFC', // DAO Treasury
+  '0x777d7f3ad24832975aec259ab7d7b57be4225abf', // Dev Wallet
   '0x0000000000000000000000000000000000000369', // Burn address
   '0x000000000000000000000000000000000000dEaD', // Dead address
   '0x0000000000000000000000000000000000000000', // Zero address
   '0x1891bD6A959B32977c438f3022678a8659364A72', // LP Pool DTGC/URMOM
   '0x0b0a8a0b7546ff180328aa155d2405882c7ac8c7', // LP Pool DTGC/PLS
-  // Add any other DAO/Dev wallets to exclude here
 ].map(addr => addr.toLowerCase());
 
 // Fallback data if API fails (placeholder)
@@ -2556,6 +2556,54 @@ export default function App() {
     setTimeout(() => setToast(null), 4000);
   };
 
+  // Fetch live supply dynamics (wallet balances) from PulseChain API
+  const fetchSupplyDynamics = useCallback(async () => {
+    try {
+      // Fetch DAO Treasury balance
+      const daoRes = await fetch(`https://api.scan.pulsechain.com/api/v2/addresses/${SUPPLY_WALLETS.dao.address}/token-balances`);
+      const daoData = await daoRes.json();
+      const daoBalance = daoData?.find?.(t => t.token?.address?.toLowerCase() === DTGC_TOKEN_ADDRESS.toLowerCase());
+      const daoDtgc = daoBalance ? parseFloat(daoBalance.value) / 1e18 : 0;
+
+      // Fetch Dev Wallet balance
+      const devRes = await fetch(`https://api.scan.pulsechain.com/api/v2/addresses/${SUPPLY_WALLETS.dev.address}/token-balances`);
+      const devData = await devRes.json();
+      const devBalance = devData?.find?.(t => t.token?.address?.toLowerCase() === DTGC_TOKEN_ADDRESS.toLowerCase());
+      const devDtgc = devBalance ? parseFloat(devBalance.value) / 1e18 : SUPPLY_WALLETS.dev.expected;
+
+      // Fetch Burn address balance
+      const burnRes = await fetch(`https://api.scan.pulsechain.com/api/v2/addresses/${SUPPLY_WALLETS.burn.address}/token-balances`);
+      const burnData = await burnRes.json();
+      const burnBalance = burnData?.find?.(t => t.token?.address?.toLowerCase() === DTGC_TOKEN_ADDRESS.toLowerCase());
+      const burnedDtgc = burnBalance ? parseFloat(burnBalance.value) / 1e18 : 0;
+
+      // Calculate circulating = Total - DAO - Dev - LP - Burned - Staked
+      const totalSupply = DTGC_TOTAL_SUPPLY;
+      const circulating = totalSupply - daoDtgc - devDtgc - SUPPLY_WALLETS.lpLocked.expected - burnedDtgc;
+
+      setSupplyDynamics({
+        dao: daoDtgc,
+        dev: devDtgc,
+        lpLocked: SUPPLY_WALLETS.lpLocked.expected,
+        burned: burnedDtgc,
+        staked: 0, // Will be updated from contract
+        circulating: Math.max(0, circulating),
+        lastUpdated: new Date(),
+      });
+
+      console.log('📊 Supply dynamics updated:', { dao: daoDtgc, dev: devDtgc, burned: burnedDtgc });
+    } catch (err) {
+      console.warn('⚠️ Failed to fetch supply dynamics:', err.message);
+    }
+  }, []);
+
+  // Fetch supply dynamics on mount and every 5 minutes
+  useEffect(() => {
+    fetchSupplyDynamics();
+    const interval = setInterval(fetchSupplyDynamics, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [fetchSupplyDynamics]);
+
   // Fetch live holder data from PulseChain Explorer API
   const fetchLiveHolders = useCallback(async () => {
     try {
@@ -3043,7 +3091,7 @@ export default function App() {
         {/* Hero */}
         <section className="hero-section" style={TESTNET_MODE ? {paddingTop: '180px'} : {}}>
           <div className="hero-badge">
-            {TESTNET_MODE ? '🧪 V17 DIAMOND+ EDITION • TESTNET 🧪' : '✦ V17 DIAMOND+ • 91% CONTROLLED ✦'}
+            {TESTNET_MODE ? '🧪 V18 DIAMOND+ EDITION • TESTNET 🧪' : '✦ V18 DIAMOND+ • 82% PROJECT SUPPLY ✦'}
           </div>
           <h1 className="hero-title gold-text">DTGC STAKING</h1>
           <p className="hero-subtitle">Stake • Earn • Govern • Prosper</p>
@@ -3118,8 +3166,8 @@ export default function App() {
               <div className="hero-stat-label">Burned Value</div>
             </div>
             <div className="hero-stat">
-              <div className="hero-stat-value" style={{color: '#4CAF50'}}>91%</div>
-              <div className="hero-stat-label">Controlled Supply</div>
+              <div className="hero-stat-value" style={{color: '#4CAF50'}}>82%</div>
+              <div className="hero-stat-label">Project Supply</div>
             </div>
           </div>
         </section>
@@ -3174,15 +3222,26 @@ export default function App() {
               marginBottom: '16px',
             }}>
               {/* DAO Rewards Pool */}
+              <a 
+                href={`https://scan.pulsechain.com/address/${SUPPLY_WALLETS.dao.address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ textDecoration: 'none' }}
+              >
               <div style={{
                 background: 'linear-gradient(135deg, rgba(76,175,80,0.1) 0%, rgba(76,175,80,0.05) 100%)',
                 border: '1px solid rgba(76,175,80,0.3)',
                 borderRadius: '12px',
                 padding: '16px',
                 textAlign: 'center',
-              }}>
+                cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(76,175,80,0.3)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
                 <div style={{ fontSize: '1.8rem', marginBottom: '4px' }}>🏛️</div>
-                <div style={{ fontSize: '0.7rem', color: '#888', letterSpacing: '1px', marginBottom: '4px' }}>DAO REWARDS POOL</div>
+                <div style={{ fontSize: '0.7rem', color: '#888', letterSpacing: '1px', marginBottom: '4px' }}>DAO TREASURY</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#4CAF50' }}>
                   {formatNumber(supplyDynamics.dao)}
                 </div>
@@ -3199,22 +3258,35 @@ export default function App() {
                   overflow: 'hidden'
                 }}>
                   <div style={{
-                    width: `${(supplyDynamics.dao / DTGC_TOTAL_SUPPLY) * 100}%`,
+                    width: `${Math.max(0.5, (supplyDynamics.dao / DTGC_TOTAL_SUPPLY) * 100)}%`,
                     height: '100%',
                     background: '#4CAF50',
                     borderRadius: '2px',
                   }} />
                 </div>
+                <div style={{ fontSize: '0.5rem', color: '#666', marginTop: '6px' }}>🔗 View on PulseScan</div>
               </div>
+              </a>
 
               {/* Dev Wallet */}
+              <a 
+                href={`https://scan.pulsechain.com/address/${SUPPLY_WALLETS.dev.address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ textDecoration: 'none' }}
+              >
               <div style={{
                 background: 'linear-gradient(135deg, rgba(33,150,243,0.1) 0%, rgba(33,150,243,0.05) 100%)',
                 border: '1px solid rgba(33,150,243,0.3)',
                 borderRadius: '12px',
                 padding: '16px',
                 textAlign: 'center',
-              }}>
+                cursor: 'pointer',
+                transition: 'transform 0.2s, box-shadow 0.2s',
+              }}
+              onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(33,150,243,0.3)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+              >
                 <div style={{ fontSize: '1.8rem', marginBottom: '4px' }}>👨‍💻</div>
                 <div style={{ fontSize: '0.7rem', color: '#888', letterSpacing: '1px', marginBottom: '4px' }}>DEV WALLET</div>
                 <div style={{ fontSize: '1.3rem', fontWeight: 800, color: '#2196F3' }}>
@@ -3237,7 +3309,9 @@ export default function App() {
                     borderRadius: '2px',
                   }} />
                 </div>
+                <div style={{ fontSize: '0.5rem', color: '#666', marginTop: '6px' }}>🔗 View on PulseScan</div>
               </div>
+              </a>
 
               {/* LP Locked */}
               <div style={{
@@ -4036,7 +4110,7 @@ export default function App() {
                 gap: '20px',
                 marginBottom: '40px',
               }}>
-                <a href="/docs/DTGC-V17-White-Paper.docx" download style={{
+                <a href="/docs/DTGC-V18-White-Paper.docx" download style={{
                   background: 'linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(184,134,11,0.15) 100%)',
                   border: '2px solid rgba(212,175,55,0.4)',
                   borderRadius: '16px',
@@ -4050,12 +4124,12 @@ export default function App() {
                   <span style={{fontSize: '2.5rem'}}>📄</span>
                   <div>
                     <div style={{fontFamily: 'Cinzel, serif', fontWeight: 700, color: 'var(--gold)', fontSize: '1.1rem'}}>WHITE PAPER</div>
-                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Public Overview • V17</div>
+                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Public Overview • V18</div>
                     <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px'}}>📥 Download .docx</div>
                   </div>
                 </a>
                 
-                <a href="/docs/DTGC-V17-Gold-Paper-DiamondPlus.docx" download style={{
+                <a href="/docs/DTGC-V18-Gold-Paper-DiamondPlus.docx" download style={{
                   background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(184,134,11,0.2) 100%)',
                   border: '2px solid rgba(212,175,55,0.5)',
                   borderRadius: '16px',
@@ -4074,7 +4148,7 @@ export default function App() {
                   </div>
                 </a>
                 
-                <a href="/docs/DTGC-V17-Gold-Paper-Quant.docx" download style={{
+                <a href="/docs/DTGC-V18-Gold-Paper-Quant.docx" download style={{
                   background: 'linear-gradient(135deg, rgba(26,35,126,0.1) 0%, rgba(48,63,159,0.15) 100%)',
                   border: '2px solid rgba(26,35,126,0.4)',
                   borderRadius: '16px',
@@ -4106,7 +4180,7 @@ export default function App() {
                 <h3 className="wp-card-title gold-text">💰 V5 GOLD PAPER TOKENOMICS</h3>
                 <div className="wp-card-content">
                   <p><strong>Total Supply: 1,000,000,000 DTGC</strong></p>
-                  <p style={{color: 'var(--gold)', fontWeight: '600', marginBottom: '16px'}}>⚠️ 91% CONTROLLED • ONLY 9% FLOAT!</p>
+                  <p style={{color: 'var(--gold)', fontWeight: '600', marginBottom: '16px'}}>⚠️ 82% PROJECT SUPPLY • ONLY 18% FLOAT!</p>
                   <table className="tokenomics-table">
                     <thead>
                       <tr><th>Allocation</th><th>Amount</th><th>Percentage</th></tr>
@@ -4119,7 +4193,7 @@ export default function App() {
                     </tbody>
                   </table>
                   <div className="wp-highlight">
-                    <strong>V17 Tax Structure (Optimized for Staker Profitability):</strong><br/>
+                    <strong>V18 Tax Structure (Optimized for Staker Profitability):</strong><br/>
                     <div style={{marginTop: '8px'}}>
                       <strong style={{color: '#4CAF50'}}>Entry Tax (1.5%):</strong> 0.75% DAO • 0.25% Dev • 0.25% DTGC/URMOM LP • 0.15% DTGC/PLS LP • 0.1% Burn<br/><br/>
                       <strong style={{color: '#4CAF50'}}>Exit Tax (1.5%):</strong> Same breakdown • <strong>Only 3% total fees!</strong><br/><br/>
@@ -4130,7 +4204,7 @@ export default function App() {
               </div>
 
               <div className="wp-card">
-                <h3 className="wp-card-title gold-text">⭐ V17 Staking Tiers (All Profitable!)</h3>
+                <h3 className="wp-card-title gold-text">⭐ V18 Staking Tiers (All Profitable!)</h3>
                 <div className="wp-card-content">
                   <table className="tokenomics-table">
                     <thead>
@@ -4290,7 +4364,7 @@ export default function App() {
             <a href={SOCIAL_LINKS.telegram} target="_blank" rel="noopener noreferrer" className="footer-link">Telegram</a>
           </div>
           <div className="footer-divider" />
-          <p className="footer-text">© 2025 DTGC V17 DIAMOND+ EDITION • dump.tires • Premium Staking on PulseChain • Diamond & Diamond+ LP Tiers 💎✨</p>
+          <p className="footer-text">© 2025 DTGC V18 DIAMOND+ EDITION • dump.tires • Premium Staking on PulseChain • Diamond & Diamond+ LP Tiers 💎✨</p>
         </footer>
       </div>
 
