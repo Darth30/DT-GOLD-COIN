@@ -19,9 +19,9 @@ import {
 /*
     ╔═══════════════════════════════════════════════════════════════╗
     ║                                                               ║
-    ║     🏆 DTGC PREMIUM STAKING PLATFORM V15 DIAMOND+ 🏆         ║
+    ║     🏆 DTGC PREMIUM STAKING PLATFORM V16 DIAMOND+ 🏆         ║
     ║                                                               ║
-    ║     ✦ V15 Gold Paper Tokenomics (91% Controlled!)            ║
+    ║     ✦ V16 Gold Paper Tokenomics (91% Controlled!)            ║
     ║     ✦ Diamond (DTGC/PLS) + Diamond+ (DTGC/URMOM) LP Tiers    ║
     ║     ✦ 3% Total Fees • All Tiers Profitable                   ║
     ║     ✦ Gold Supply Dynamics + Live Holder Ticker              ║
@@ -47,7 +47,7 @@ const DTGC_TOKENOMICS = {
   lpLocked: 87000000,        // 8.7% - LP Locked
 };
 
-// V15 PROFITABLE FEE STRUCTURE (Reduced for positive staker ROI)
+// V16 PROFITABLE FEE STRUCTURE (Reduced for positive staker ROI)
 const V5_FEES = {
   // Entry Tax: 1.5% total (reduced from 5%)
   entry: {
@@ -76,7 +76,7 @@ const V5_FEES = {
   },
 };
 
-// V15 PROFITABLE STAKING TIERS (All tiers positive ROI with 3% total fees)
+// V16 PROFITABLE STAKING TIERS (All tiers positive ROI with 3% total fees)
 const V5_STAKING_TIERS = [
   { 
     id: 0, 
@@ -2512,8 +2512,12 @@ export default function App() {
   const [contractStats, setContractStats] = useState({ totalStaked: '0', stakers: '0' });
 
   // Live holder wallets for ticker (fetched from PulseChain API)
-  const [liveHolders, setLiveHolders] = useState(HOLDER_WALLETS);
-  const [holdersLoading, setHoldersLoading] = useState(true);
+  const [liveHolders, setLiveHolders] = useState({
+    holders: HOLDER_WALLETS,
+    loading: true,
+    lastUpdated: null,
+    error: null,
+  });
 
   const [canVote, setCanVote] = useState(false);
   const [selectedVote, setSelectedVote] = useState(null);
@@ -2543,14 +2547,6 @@ export default function App() {
     staked: 0,
     circulating: SUPPLY_WALLETS.circulating.expected,
     lastUpdated: null,
-  });
-
-  // Live holder wallets from PulseChain API
-  const [liveHolders, setLiveHolders] = useState({
-    holders: FALLBACK_HOLDERS,
-    loading: true,
-    lastUpdated: null,
-    error: null,
   });
 
   // Toast notification helper - defined early so all callbacks can use it
@@ -2598,7 +2594,7 @@ export default function App() {
       console.warn('⚠️ Holder API error, using fallback:', err.message);
       setLiveHolders(prev => ({
         ...prev,
-        holders: prev.holders.length > 0 ? prev.holders : FALLBACK_HOLDERS,
+        holders: prev.holders.length > 0 ? prev.holders : HOLDER_WALLETS,
         loading: false,
         error: err.message,
       }));
@@ -3047,7 +3043,7 @@ export default function App() {
         {/* Hero */}
         <section className="hero-section" style={TESTNET_MODE ? {paddingTop: '180px'} : {}}>
           <div className="hero-badge">
-            {TESTNET_MODE ? '🧪 V15 DIAMOND+ EDITION • TESTNET 🧪' : '✦ V15 DIAMOND+ • 91% CONTROLLED ✦'}
+            {TESTNET_MODE ? '🧪 V16 DIAMOND+ EDITION • TESTNET 🧪' : '✦ V16 DIAMOND+ • 91% CONTROLLED ✦'}
           </div>
           <h1 className="hero-title gold-text">DTGC STAKING</h1>
           <p className="hero-subtitle">Stake • Earn • Govern • Prosper</p>
@@ -3435,7 +3431,7 @@ export default function App() {
                 gap: '8px'
               }}>
                 📊 Top Holder Wallets (Excluding DAO/Dev) • Hover to Pause
-                {holdersLoading ? (
+                {liveHolders.loading ? (
                   <span style={{ color: '#FF9800' }}>⏳ Loading...</span>
                 ) : (
                   <span style={{ 
@@ -3457,7 +3453,7 @@ export default function App() {
               </div>
               <div className="ticker-track">
                 {/* First set of items */}
-                {liveHolders.map((wallet, index) => (
+                {liveHolders.holders.map((wallet, index) => (
                   <div key={`a-${index}`} className="ticker-item">
                     <span className="ticker-address">{wallet.address}</span>
                     <span className="ticker-balance">{formatNumber(wallet.balance)} DTGC</span>
@@ -3465,7 +3461,7 @@ export default function App() {
                   </div>
                 ))}
                 {/* Duplicate for seamless loop */}
-                {liveHolders.map((wallet, index) => (
+                {liveHolders.holders.map((wallet, index) => (
                   <div key={`b-${index}`} className="ticker-item">
                     <span className="ticker-address">{wallet.address}</span>
                     <span className="ticker-balance">{formatNumber(wallet.balance)} DTGC</span>
@@ -3479,7 +3475,7 @@ export default function App() {
                 textAlign: 'center', 
                 marginTop: '6px'
               }}>
-                Total Tracked: {formatNumber(liveHolders.reduce((sum, w) => sum + w.balance, 0))} DTGC • {liveHolders.length} Wallets
+                Total Tracked: {formatNumber(liveHolders.holders.reduce((sum, w) => sum + w.balance, 0))} DTGC • {liveHolders.holders.length} Wallets
               </div>
             </div>
           </div>
@@ -4040,7 +4036,7 @@ export default function App() {
                 gap: '20px',
                 marginBottom: '40px',
               }}>
-                <a href="/docs/DTGC-V15-White-Paper.docx" download style={{
+                <a href="/docs/DTGC-V16-White-Paper.docx" download style={{
                   background: 'linear-gradient(135deg, rgba(212,175,55,0.1) 0%, rgba(184,134,11,0.15) 100%)',
                   border: '2px solid rgba(212,175,55,0.4)',
                   borderRadius: '16px',
@@ -4054,12 +4050,12 @@ export default function App() {
                   <span style={{fontSize: '2.5rem'}}>📄</span>
                   <div>
                     <div style={{fontFamily: 'Cinzel, serif', fontWeight: 700, color: 'var(--gold)', fontSize: '1.1rem'}}>WHITE PAPER</div>
-                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Public Overview • V15</div>
+                    <div style={{fontSize: '0.8rem', color: 'var(--text-secondary)'}}>Public Overview • V16</div>
                     <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '4px'}}>📥 Download .docx</div>
                   </div>
                 </a>
                 
-                <a href="/docs/DTGC-V15-Gold-Paper-DiamondPlus.docx" download style={{
+                <a href="/docs/DTGC-V16-Gold-Paper-DiamondPlus.docx" download style={{
                   background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(184,134,11,0.2) 100%)',
                   border: '2px solid rgba(212,175,55,0.5)',
                   borderRadius: '16px',
@@ -4078,7 +4074,7 @@ export default function App() {
                   </div>
                 </a>
                 
-                <a href="/docs/DTGC-V15-Gold-Paper-Quant.docx" download style={{
+                <a href="/docs/DTGC-V16-Gold-Paper-Quant.docx" download style={{
                   background: 'linear-gradient(135deg, rgba(26,35,126,0.1) 0%, rgba(48,63,159,0.15) 100%)',
                   border: '2px solid rgba(26,35,126,0.4)',
                   borderRadius: '16px',
@@ -4123,7 +4119,7 @@ export default function App() {
                     </tbody>
                   </table>
                   <div className="wp-highlight">
-                    <strong>V15 Tax Structure (Optimized for Staker Profitability):</strong><br/>
+                    <strong>V16 Tax Structure (Optimized for Staker Profitability):</strong><br/>
                     <div style={{marginTop: '8px'}}>
                       <strong style={{color: '#4CAF50'}}>Entry Tax (1.5%):</strong> 0.75% DAO • 0.25% Dev • 0.25% DTGC/URMOM LP • 0.15% DTGC/PLS LP • 0.1% Burn<br/><br/>
                       <strong style={{color: '#4CAF50'}}>Exit Tax (1.5%):</strong> Same breakdown • <strong>Only 3% total fees!</strong><br/><br/>
@@ -4134,7 +4130,7 @@ export default function App() {
               </div>
 
               <div className="wp-card">
-                <h3 className="wp-card-title gold-text">⭐ V15 Staking Tiers (All Profitable!)</h3>
+                <h3 className="wp-card-title gold-text">⭐ V16 Staking Tiers (All Profitable!)</h3>
                 <div className="wp-card-content">
                   <table className="tokenomics-table">
                     <thead>
@@ -4294,7 +4290,7 @@ export default function App() {
             <a href={SOCIAL_LINKS.telegram} target="_blank" rel="noopener noreferrer" className="footer-link">Telegram</a>
           </div>
           <div className="footer-divider" />
-          <p className="footer-text">© 2025 DTGC V15 DIAMOND+ EDITION • dump.tires • Premium Staking on PulseChain • Diamond & Diamond+ LP Tiers 💎✨</p>
+          <p className="footer-text">© 2025 DTGC V16 DIAMOND+ EDITION • dump.tires • Premium Staking on PulseChain • Diamond & Diamond+ LP Tiers 💎✨</p>
         </footer>
       </div>
 
@@ -4319,5 +4315,3 @@ export default function App() {
     </ThemeContext.Provider>
   );
 }
-// V15 Tue Dec 30 23:17:04 EST 2025
-// V15 Tue Dec 30 23:18:07 EST 2025
