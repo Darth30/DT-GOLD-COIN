@@ -2703,51 +2703,6 @@ export default function App() {
   const liveBurnedUSD = (BURN_STATS.totalDeadWallet * livePrices.urmom).toFixed(2);
   const liveLPBurnedUSD = (totalLPUrmom * livePrices.urmom).toFixed(2);
 
-  // Fetch live holder data from PulseChain Explorer API
-  const fetchLiveHolders = useCallback(async () => {
-    setHoldersLoading(true);
-    try {
-      // Fetch from PulseChain Blockscout API
-      const response = await fetch(PULSECHAIN_API.holders);
-      
-      if (!response.ok) {
-        throw new Error('API request failed');
-      }
-      
-      const data = await response.json();
-      
-      // Process holders - filter out excluded wallets
-      if (data.items && Array.isArray(data.items)) {
-        const filteredHolders = data.items
-          .filter(holder => !EXCLUDED_WALLETS.includes(holder.address?.hash?.toLowerCase()))
-          .slice(0, 20) // Top 20 holders
-          .map((holder, index) => ({
-            address: shortenAddress(holder.address?.hash || ''),
-            fullAddress: holder.address?.hash || '',
-            balance: parseFloat(holder.value) / 1e18, // Convert from wei
-            label: `Rank #${index + 1}`,
-          }));
-        
-        if (filteredHolders.length > 0) {
-          setLiveHolders(filteredHolders);
-          console.log('📊 Live holders updated:', filteredHolders.length, 'wallets');
-        }
-      }
-    } catch (err) {
-      console.warn('⚠️ Could not fetch live holders, using fallback:', err.message);
-      // Keep fallback data
-    } finally {
-      setHoldersLoading(false);
-    }
-  }, []);
-
-  // Fetch holders on mount and every 5 minutes
-  useEffect(() => {
-    fetchLiveHolders();
-    const interval = setInterval(fetchLiveHolders, 5 * 60 * 1000); // 5 minutes
-    return () => clearInterval(interval);
-  }, [fetchLiveHolders]);
-
   // Initialize testnet balances
   const initTestnetBalances = useCallback(() => {
     if (!TESTNET_MODE) return;
@@ -4364,4 +4319,3 @@ export default function App() {
     </ThemeContext.Provider>
   );
 }
-// rebuild Tue Dec 30 22:31:47 EST 2025
