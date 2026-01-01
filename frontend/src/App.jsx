@@ -49,30 +49,30 @@ const DTGC_TOKENOMICS = {
 
 // V18 PROFITABLE FEE STRUCTURE (Reduced for positive staker ROI)
 const V5_FEES = {
-  // Entry Tax: 1.5% total (reduced from 5%)
+  // Entry Tax: 3.75% total (reduced from 5%)
   entry: {
-    total: 1.5,
+    total: 3.75,
     daoTreasury: 0.75,       // 0.75% DAO Treasury
     dev: 0.25,               // 0.25% Dev
     autoLP_DTGC_URMOM: 0.25, // 0.25% Auto LP DTGC/URMOM
     autoLP_DTGC_PLS: 0.15,   // 0.15% DTGC/PLS
     burn: 0.10,              // 0.10% DTGC Burn
   },
-  // Exit Tax: 1.5% total (same breakdown)
+  // Exit Tax: 3.75% total (same breakdown)
   exit: {
-    total: 1.5,
+    total: 3.75,
     daoTreasury: 0.75,
     dev: 0.25,
     autoLP_DTGC_URMOM: 0.25,
     autoLP_DTGC_PLS: 0.15,
     burn: 0.10,
   },
-  // EES (Emergency End Stake): 12% total (reduced from 20%)
+  // EES (Emergency End Stake): 20% total (reduced from 20%)
   ees: {
-    total: 12,
-    dev: 3,              // 3% Dev
-    dao: 7,              // 7% DAO
-    autoLP: 2,           // 2% Auto LP
+    total: 20,
+    dev: 5,              // 3% Dev
+    dao: 12,              // 7% DAO
+    autoLP: 3,           // 2% Auto LP
   },
 };
 
@@ -85,7 +85,7 @@ const V5_STAKING_TIERS = [
     minInvest: 200, 
     lockDays: 60,  // Extended from 30 to 60 days
     holdDays: 60, 
-    apr: 22,       // Increased from 15%
+    apr: 15.4,       // Increased from 15%
     bonus: 10, 
     boost: 1,
     asset: 'DTGC',
@@ -99,7 +99,7 @@ const V5_STAKING_TIERS = [
     minInvest: 500, 
     lockDays: 90, 
     holdDays: 90, 
-    apr: 24,       // Increased from 18%
+    apr: 16.8,       // Increased from 18%
     bonus: 10, 
     boost: 1,
     asset: 'DTGC',
@@ -113,7 +113,7 @@ const V5_STAKING_TIERS = [
     minInvest: 10000, 
     lockDays: 180, 
     holdDays: 180, 
-    apr: 26,       // Increased from 18%
+    apr: 18.2,       // Increased from 18%
     bonus: 10, 
     boost: 1,
     asset: 'DTGC',
@@ -130,7 +130,7 @@ const V5_DIAMOND_TIER = {
   minInvest: 1000,
   lockDays: 90,
   holdDays: 90,
-  apr: 40,
+  apr: 28,
   effectiveApr: 40 * 1.5, // 60% effective
   bonus: 12,
   boost: 1.5,
@@ -148,7 +148,7 @@ const V5_DIAMOND_PLUS_TIER = {
   minInvest: 1000,
   lockDays: 90,
   holdDays: 90,
-  apr: 50,
+  apr: 35,
   effectiveApr: 50 * 2, // 100% effective!
   bonus: 15,
   boost: 2,
@@ -3172,7 +3172,7 @@ export default function App() {
     setTestnetBalances(newBalances);
     localStorage.setItem('dtgc-testnet-balances', JSON.stringify(newBalances));
     
-    showToast(`✅ Unstaked! Received ${formatNumber(returnAmount)} + ${formatNumber(rewards)} rewards${isEarly ? ' (12% early exit fee)' : ''}`, 'success');
+    showToast(`✅ Unstaked! Received ${formatNumber(returnAmount)} + ${formatNumber(rewards)} rewards${isEarly ? ' (20% early exit fee)' : ''}`, 'success');
   };
 
   const copyToClipboard = (text) => {
@@ -3898,9 +3898,9 @@ export default function App() {
 
                   <div className="fee-breakdown">
                     <div className="fee-title">TAX STRUCTURE <span style={{ fontSize: '0.7rem', color: 'var(--gold)', cursor: 'pointer' }} onClick={() => setActiveTab('whitepaper')}>📄 Details</span></div>
-                    <div className="fee-row"><span>Entry Tax</span><span style={{color: '#4CAF50'}}>1.5%</span></div>
-                    <div className="fee-row"><span>Exit Tax</span><span style={{color: '#4CAF50'}}>1.5%</span></div>
-                    <div className="fee-row"><span>EES (Emergency End Stake)</span><span style={{color: '#FF5722'}}>12%</span></div>
+                    <div className="fee-row"><span>Entry Tax</span><span style={{color: '#4CAF50'}}>3.75%</span></div>
+                    <div className="fee-row"><span>Exit Tax</span><span style={{color: '#4CAF50'}}>3.75%</span></div>
+                    <div className="fee-row"><span>EES (Emergency End Stake)</span><span style={{color: '#FF5722'}}>20%</span></div>
                     <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '8px', textAlign: 'center' }}>
                       Entry/Exit: 0.75% DAO • 0.25% Dev • 0.25% DTGC/URMOM LP • 0.15% DTGC/PLS LP • 0.1% Burn
                     </div>
@@ -4426,9 +4426,9 @@ export default function App() {
                   <div className="wp-highlight">
                     <strong>V18 Tax Structure (Optimized for Staker Profitability):</strong><br/>
                     <div style={{marginTop: '8px'}}>
-                      <strong style={{color: '#4CAF50'}}>Entry Tax (1.5%):</strong> 0.75% DAO • 0.25% Dev • 0.25% DTGC/URMOM LP • 0.15% DTGC/PLS LP • 0.1% Burn<br/><br/>
-                      <strong style={{color: '#4CAF50'}}>Exit Tax (1.5%):</strong> Same breakdown • <strong>Only 3% total fees!</strong><br/><br/>
-                      <strong style={{color: '#FF5722'}}>EES - Emergency End Stake (12%):</strong> 7% DAO • 3% Dev • 2% Auto LP
+                      <strong style={{color: '#4CAF50'}}>Entry Tax (3.75%):</strong> 0.75% DAO • 0.25% Dev • 0.25% DTGC/URMOM LP • 0.15% DTGC/PLS LP • 0.1% Burn<br/><br/>
+                      <strong style={{color: '#4CAF50'}}>Exit Tax (3.75%):</strong> Same breakdown • <strong>Only 3% total fees!</strong><br/><br/>
+                      <strong style={{color: '#FF5722'}}>EES - Emergency End Stake (20%):</strong> 7% DAO • 3% Dev • 2% Auto LP
                     </div>
                   </div>
                 </div>
@@ -4469,7 +4469,7 @@ export default function App() {
                       <tr><td style={{color: '#4CAF50'}}>Genesis (0-50M)</td><td>100%</td><td>24%</td><td style={{fontWeight: '700'}}>60%</td><td style={{fontWeight: '700', color: '#9C27B0'}}>100%</td></tr>
                       <tr><td>Early (50-100M)</td><td>85%</td><td>20.4%</td><td>51%</td><td style={{color: '#9C27B0'}}>85%</td></tr>
                       <tr><td style={{color: '#FFC107'}}>Growth (100-200M)</td><td>70%</td><td>16.8%</td><td>42%</td><td style={{color: '#9C27B0'}}>70%</td></tr>
-                      <tr><td>Mature (200-350M)</td><td>50%</td><td>12%</td><td>30%</td><td style={{color: '#9C27B0'}}>50%</td></tr>
+                      <tr><td>Mature (200-350M)</td><td>50%</td><td>20%</td><td>30%</td><td style={{color: '#9C27B0'}}>50%</td></tr>
                       <tr><td style={{color: '#FF5722'}}>Saturated (350-500M)</td><td>35%</td><td>8.4%</td><td>21%</td><td style={{color: '#9C27B0'}}>35%</td></tr>
                     </tbody>
                   </table>
@@ -4834,7 +4834,7 @@ export default function App() {
                     </div>
                     <div style={{ textAlign: 'center' }}>
                       <div style={{ color: '#FF9800', fontSize: '0.75rem' }}>Quarterly</div>
-                      <div style={{ color: '#FF9800', fontWeight: 'bold' }}>~12%/yr</div>
+                      <div style={{ color: '#FF9800', fontWeight: 'bold' }}>~20%/yr</div>
                       <div style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>⚠️ Drift risk</div>
                     </div>
                     <div style={{ textAlign: 'center' }}>
